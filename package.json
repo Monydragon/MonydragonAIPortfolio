@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "create-admin": "tsx scripts/create-admin-user.ts",
+    "migrate-data": "tsx scripts/migrate-static-data.ts",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f mongodb",

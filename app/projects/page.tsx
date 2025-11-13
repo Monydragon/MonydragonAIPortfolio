@@ -1,14 +1,40 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { AnimatedCard } from "@/components/ui/AnimatedCard";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
-import {
-  Project,
-  ProjectCategory,
-  projects,
-} from "@/lib/data/projects";
+
+type ProjectCategory = "unity-asset" | "rpgmaker-plugin" | "game" | "web" | "other";
+
+interface ProjectLink {
+  type: string;
+  label: string;
+  url: string;
+}
+
+interface Project {
+  _id?: string;
+  title: string;
+  subtitle?: string;
+  category: ProjectCategory;
+  description: string;
+  longDescription?: string;
+  technologies: string[];
+  platforms: string[];
+  links: ProjectLink[];
+  featured?: boolean;
+  tags?: string[];
+  coverImage?: string;
+  jam?: {
+    name: string;
+    url?: string;
+    year?: string;
+  };
+  notes?: string[];
+  releasedOn?: string;
+  sortPriority?: number;
+}
 
 const categoryLabels: Record<ProjectCategory, string> = {
   "unity-asset": "Unity Assets",
@@ -38,10 +64,35 @@ const getCategoryLabel = (category: ProjectCategory) => categoryLabels[category]
 export default function ProjectsPage() {
   const [selectedCategory, setSelectedCategory] = useState<ProjectCategory | "all">("all");
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchProjects() {
+      try {
+        setLoading(true);
+        const response = await fetch("/api/projects");
+        if (!response.ok) {
+          throw new Error("Failed to fetch projects");
+        }
+        const data = await response.json();
+        setProjects(data.projects || []);
+        setError(null);
+      } catch (err: any) {
+        console.error("Error fetching projects:", err);
+        setError(err.message || "Failed to load projects");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchProjects();
+  }, []);
 
   const categories = useMemo(
     () => Array.from(new Set(projects.map((project) => project.category))),
-    []
+    [projects]
   );
 
   const filteredProjects = useMemo(() => {
@@ -53,11 +104,11 @@ export default function ProjectsPage() {
     });
 
     return sortProjects(base);
-  }, [selectedCategory, showFeaturedOnly]);
+  }, [projects, selectedCategory, showFeaturedOnly]);
 
   const featuredCount = useMemo(
     () => projects.filter((project) => project.featured).length,
-    []
+    [projects]
   );
 
   return (
@@ -116,10 +167,29 @@ export default function ProjectsPage() {
 
         {/* Projects Grid */}
         <section>
-          {filteredProjects.length > 0 ? (
+          {loading ? (
+            <motion.div
+              className="text-center py-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading projects...</p>
+            </motion.div>
+          ) : error ? (
+            <motion.div
+              className="text-center py-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+            >
+              <p className="text-red-600 dark:text-red-400 text-lg">{error}</p>
+            </motion.div>
+          ) : filteredProjects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredProjects.map((project, index) => (
-                <AnimatedCard key={project.id} delay={index * 0.05}>
+                <AnimatedCard key={project._id || index} delay={index * 0.05}>
                   <ProjectCard project={project} />
                 </AnimatedCard>
               ))}
@@ -232,11 +302,11 @@ function ProjectCard({ project }: { project: Project }) {
       </div>
 
       {/* Links */}
-      {project.links.length > 0 && (
+      {project.links && project.links.length > 0 && (
         <div className="flex flex-wrap gap-3">
-          {project.links.map((link) => (
+          {project.links.map((link, linkIndex) => (
             <AnimatedButton
-              key={`${project.id}-${link.url}`}
+              key={`${project._id || project.title}-${linkIndex}-${link.url}`}
               href={link.url}
               variant="secondary"
               className="text-sm"

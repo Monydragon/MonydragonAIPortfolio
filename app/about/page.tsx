@@ -1,41 +1,87 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { AnimatedCard } from "@/components/ui/AnimatedCard";
 import { ResumeDownload } from "@/components/resume/ResumeDownload";
 import { defaultResumeData } from "@/lib/resume";
 
+interface SiteContent {
+  key: string;
+  content: any;
+}
+
 export default function AboutPage() {
-  const skills = {
-    development: [
-      "TypeScript",
-      "JavaScript",
-      "C#",
-      ".NET",
-      "Next.js",
-      "React",
-      "Node.js",
-      "Python",
-      "Blazor",
-      "MAUI",
-      "Avalonia",
-    ],
-    ai: ["AI Integration Patterns", "LLM APIs", "Vector Databases", "Prompt Engineering"],
-    architecture: ["System Design", "Scalable Architecture", "Microservices", "Cloud Infrastructure"],
-    tools: [
-      "Git",
-      "GitKraken",
-      "JetBrains Rider",
-      "JetBrains Tooling",
-      "MongoDB",
-      "PostgreSQL",
-      "SQL",
-      "SQLite",
-      "Docker",
-      "AWS",
-      "Azure",
-    ]
-  };
+  const [skills, setSkills] = useState({
+    development: [] as string[],
+    ai: [] as string[],
+    architecture: [] as string[],
+    tools: [] as string[],
+  });
+  const [summary, setSummary] = useState({
+    title: "About Me",
+    subtitle: "Transitioning to AI-First Development",
+    summary: "I'm pivoting from traditional software development to embrace AI-first workflows. My focus is on architecture, modern web technologies, and creating engaging interactive experiences that push the boundaries of what's possible.",
+  });
+  const [story, setStory] = useState({
+    paragraph1: "I'm pivoting from traditional software development to embrace AI-first workflows. My focus is on architecture, modern web technologies, and creating engaging interactive experiences that push the boundaries of what's possible.",
+    paragraph2: "This portfolio represents my exploration of AI integration patterns, system design, and the future of web development. I'm passionate about building systems that are not just functional, but intelligent, scalable, and delightful to use.",
+  });
+  const [architecture, setArchitecture] = useState({
+    title: "Architecture Focus",
+    description: "I'm deeply interested in system architecture and design patterns. My work focuses on creating robust, scalable solutions that can evolve with changing requirements. I believe in building systems that are not just functional today, but adaptable for tomorrow's challenges.",
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchSiteContent() {
+      try {
+        setLoading(true);
+        const response = await fetch("/api/content");
+        if (!response.ok) {
+          throw new Error("Failed to fetch site content");
+        }
+        const data = await response.json();
+        const contents: SiteContent[] = data.contents || [];
+
+        // Extract skills
+        const skillsContent = contents.find((c) => c.key === "about_skills");
+        if (skillsContent?.content) {
+          setSkills({
+            development: skillsContent.content.development || [],
+            ai: skillsContent.content.ai || [],
+            architecture: skillsContent.content.architecture || [],
+            tools: skillsContent.content.tools || [],
+          });
+        }
+
+        // Extract summary
+        const summaryContent = contents.find((c) => c.key === "about_summary");
+        if (summaryContent?.content) {
+          setSummary(summaryContent.content);
+        }
+
+        // Extract story
+        const storyContent = contents.find((c) => c.key === "about_story");
+        if (storyContent?.content) {
+          setStory(storyContent.content);
+        }
+
+        // Extract architecture
+        const archContent = contents.find((c) => c.key === "about_architecture");
+        if (archContent?.content) {
+          setArchitecture(archContent.content);
+        }
+      } catch (err: any) {
+        console.error("Error fetching site content:", err);
+        // Use defaults if fetch fails
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchSiteContent();
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-16 max-w-6xl">
@@ -48,10 +94,10 @@ export default function AboutPage() {
           transition={{ duration: 0.8 }}
         >
           <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-            About Me
+            {summary.title}
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400">
-            Transitioning to AI-First Development
+            {summary.subtitle}
           </p>
         </motion.section>
 
@@ -67,14 +113,10 @@ export default function AboutPage() {
           </h2>
           <div className="prose prose-lg dark:prose-invert max-w-none">
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg">
-              I&apos;m pivoting from traditional software development to embrace AI-first workflows.
-              My focus is on architecture, modern web technologies, and creating engaging
-              interactive experiences that push the boundaries of what&apos;s possible.
+              {story.paragraph1}
             </p>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg">
-              This portfolio represents my exploration of AI integration patterns, system design,
-              and the future of web development. I&apos;m passionate about building systems that are
-              not just functional, but intelligent, scalable, and delightful to use.
+              {story.paragraph2}
             </p>
           </div>
         </motion.section>
@@ -169,14 +211,11 @@ export default function AboutPage() {
           transition={{ duration: 0.8, delay: 0.8 }}
         >
           <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Architecture Focus
+            {architecture.title}
           </h2>
           <div className="prose prose-lg dark:prose-invert max-w-none">
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg">
-              I&apos;m deeply interested in system architecture and design patterns. My work focuses
-              on creating robust, scalable solutions that can evolve with changing requirements.
-              I believe in building systems that are not just functional today, but adaptable
-              for tomorrow&apos;s challenges.
+              {architecture.description}
             </p>
           </div>
         </motion.section>

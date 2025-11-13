@@ -1,11 +1,47 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { AnimatedCard } from "@/components/ui/AnimatedCard";
-import { defaultResumeData } from "@/lib/resume";
+
+interface Experience {
+  _id?: string;
+  title: string;
+  company: string;
+  location?: string;
+  startDate: string;
+  endDate?: string;
+  current: boolean;
+  description: string[];
+  technologies?: string[];
+}
 
 export default function ExperiencePage() {
-  const experience = defaultResumeData.experience;
+  const [experience, setExperience] = useState<Experience[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchExperience() {
+      try {
+        setLoading(true);
+        const response = await fetch("/api/experience");
+        if (!response.ok) {
+          throw new Error("Failed to fetch experience");
+        }
+        const data = await response.json();
+        setExperience(data.experiences || []);
+        setError(null);
+      } catch (err: any) {
+        console.error("Error fetching experience:", err);
+        setError(err.message || "Failed to load experience");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchExperience();
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-16 max-w-6xl">
@@ -27,16 +63,37 @@ export default function ExperiencePage() {
 
         {/* Experience Timeline */}
         <section className="relative">
-          {/* Timeline line - hidden on mobile, visible on desktop */}
-          <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-600 via-purple-600 to-pink-600 transform -translate-x-1/2" />
-          
-          {/* Mobile timeline line */}
-          <div className="md:hidden absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-600 via-purple-600 to-pink-600" />
+          {loading ? (
+            <motion.div
+              className="text-center py-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading experience...</p>
+            </motion.div>
+          ) : error ? (
+            <motion.div
+              className="text-center py-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+            >
+              <p className="text-red-600 dark:text-red-400 text-lg">{error}</p>
+            </motion.div>
+          ) : experience.length > 0 ? (
+            <>
+              {/* Timeline line - hidden on mobile, visible on desktop */}
+              <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-600 via-purple-600 to-pink-600 transform -translate-x-1/2" />
+              
+              {/* Mobile timeline line */}
+              <div className="md:hidden absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-600 via-purple-600 to-pink-600" />
 
-          <div className="space-y-12">
-            {experience.map((exp, index) => (
+              <div className="space-y-12">
+                {experience.map((exp, index) => (
               <motion.div
-                key={index}
+                key={exp._id || index}
                 className="relative"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -116,28 +173,27 @@ export default function ExperiencePage() {
                       )}
                     </div>
                   </AnimatedCard>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                  </div>
+                </motion.div>
+              ))}
+              </div>
+            </>
+          ) : (
+            <motion.div
+              className="text-center py-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8 }}
+            >
+              <p className="text-gray-600 dark:text-gray-400 text-lg">
+                Experience details coming soon...
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+                Work experience will be displayed here
+              </p>
+            </motion.div>
+          )}
         </section>
-
-        {/* Empty State */}
-        {experience.length === 0 && (
-          <motion.div
-            className="text-center py-12"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
-          >
-            <p className="text-gray-600 dark:text-gray-400 text-lg">
-              Experience details coming soon...
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-              Work experience will be displayed here
-            </p>
-          </motion.div>
-        )}
       </div>
     </div>
   );
