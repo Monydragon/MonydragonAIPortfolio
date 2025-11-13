@@ -49,6 +49,11 @@ export function Footer({ version, lastUpdated }: FooterProps) {
                 </Link>
               </li>
               <li>
+                <Link href="/experience" className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
+                  Experience
+                </Link>
+              </li>
+              <li>
                 <Link href="/projects" className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
                   Projects
                 </Link>

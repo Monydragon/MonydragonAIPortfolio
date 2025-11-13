@@ -1,79 +1,270 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { AnimatedCard } from "@/components/ui/AnimatedCard";
+import { AnimatedButton } from "@/components/ui/AnimatedButton";
+import {
+  Project,
+  ProjectCategory,
+  projects,
+} from "@/lib/data/projects";
+
+const categoryLabels: Record<ProjectCategory, string> = {
+  "unity-asset": "Unity Assets",
+  "rpgmaker-plugin": "RPG Maker Plugins",
+  game: "Games",
+};
+
+const categoryGradients: Record<ProjectCategory, string> = {
+  "unity-asset": "from-blue-500 via-blue-400 to-purple-500",
+  "rpgmaker-plugin": "from-emerald-500 via-teal-400 to-sky-500",
+  game: "from-pink-500 via-purple-500 to-indigo-500",
+};
+
+const sortProjects = (items: Project[]) => {
+  return [...items].sort((a, b) => {
+    const priorityDelta = (b.sortPriority ?? 0) - (a.sortPriority ?? 0);
+    if (priorityDelta !== 0) return priorityDelta;
+
+    const dateA = a.releasedOn ? new Date(a.releasedOn).getTime() : 0;
+    const dateB = b.releasedOn ? new Date(b.releasedOn).getTime() : 0;
+    return dateB - dateA;
+  });
+};
+
+const getCategoryLabel = (category: ProjectCategory) => categoryLabels[category];
 
 export default function ProjectsPage() {
-  // Placeholder projects - will be replaced with database data
-  const projects = [
-    {
-      id: 1,
-      title: "Portfolio Website",
-      description: "This responsive portfolio site built with Next.js 15 and TypeScript, featuring animations, sound effects, and a living resume system.",
-      technologies: ["Next.js", "TypeScript", "Tailwind CSS", "Framer Motion"],
-      status: "In Progress"
-    }
-  ];
+  const [selectedCategory, setSelectedCategory] = useState<ProjectCategory | "all">("all");
+  const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
+
+  const categories = useMemo(
+    () => Array.from(new Set(projects.map((project) => project.category))),
+    []
+  );
+
+  const filteredProjects = useMemo(() => {
+    const base = projects.filter((project) => {
+      const matchesCategory =
+        selectedCategory === "all" || project.category === selectedCategory;
+      const matchesFeatured = showFeaturedOnly ? project.featured : true;
+      return matchesCategory && matchesFeatured;
+    });
+
+    return sortProjects(base);
+  }, [selectedCategory, showFeaturedOnly]);
+
+  const featuredCount = useMemo(
+    () => projects.filter((project) => project.featured).length,
+    []
+  );
 
   return (
     <div className="container mx-auto px-4 py-16 max-w-6xl">
       <div className="space-y-12">
         {/* Header */}
-        <motion.section 
-          className="text-center space-y-4 pb-4"
+        <motion.section
+          className="text-center space-y-6 pb-4"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
           <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Projects
+            Projects & Releases
           </h1>
-          <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400">
-            A showcase of my work and experiments
+          <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+            Explore Unity systems, RPG Maker plugins, and game projects built across jams,
+            commissions, and passion experiments.
           </p>
         </motion.section>
 
+        {/* Filters */}
+        <section className="space-y-4">
+          <div className="flex flex-wrap justify-center gap-2">
+            <FilterPill
+              active={selectedCategory === "all"}
+              label="All"
+              onClick={() => setSelectedCategory("all")}
+            />
+            {categories.map((category) => (
+              <FilterPill
+                key={category}
+                active={selectedCategory === category}
+                label={getCategoryLabel(category)}
+                onClick={() => setSelectedCategory(category)}
+              />
+            ))}
+          </div>
+
+          <div className="flex justify-center">
+            <button
+              onClick={() => setShowFeaturedOnly((prev) => !prev)}
+              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-300 ${
+                showFeaturedOnly
+                  ? "border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-300"
+                  : "border-gray-200 bg-white text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300"
+              }`}
+            >
+              <span>{showFeaturedOnly ? "Showing Featured" : "Show Featured Only"}</span>
+              <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-xs text-blue-500">
+                {featuredCount}
+              </span>
+            </button>
+          </div>
+        </section>
+
         {/* Projects Grid */}
         <section>
-          {projects.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map((project, index) => (
-                <AnimatedCard key={project.id} delay={index * 0.1}>
-                  <div className="space-y-4">
-                    <h3 className="text-2xl font-bold">{project.title}</h3>
-                    <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{project.description}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {project.technologies.map((tech, techIndex) => (
-                        <motion.span
-                          key={techIndex}
-                          className="px-3 py-1 text-sm bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 text-blue-800 dark:text-blue-200 rounded-full font-medium"
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.5 + techIndex * 0.05 }}
-                          whileHover={{ scale: 1.1, y: -2 }}
-                        >
-                          {tech}
-                        </motion.span>
-                      ))}
-                    </div>
-                    <div className="pt-2 border-t border-gray-200 dark:border-gray-800">
-                      <span className="text-sm text-gray-500 dark:text-gray-500 font-medium">{project.status}</span>
-                    </div>
-                  </div>
+          {filteredProjects.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredProjects.map((project, index) => (
+                <AnimatedCard key={project.id} delay={index * 0.05}>
+                  <ProjectCard project={project} />
                 </AnimatedCard>
               ))}
             </div>
           ) : (
-            <motion.div 
+            <motion.div
               className="text-center py-12"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.8 }}
+              transition={{ duration: 0.6 }}
             >
-              <p className="text-gray-600 dark:text-gray-400 text-lg">Projects coming soon...</p>
+              <p className="text-gray-600 dark:text-gray-400 text-lg">
+                No projects found for this filter. Try a different category or disable featured only.
+              </p>
             </motion.div>
           )}
         </section>
+      </div>
+    </div>
+  );
+}
+
+function FilterPill({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-full border px-4 py-2 text-sm font-medium transition-all duration-300 ${
+        active
+          ? "border-blue-500 bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/20"
+          : "border-gray-200 bg-white text-gray-600 hover:border-blue-500 hover:text-blue-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function ProjectCard({ project }: { project: Project }) {
+  const categoryGradient = categoryGradients[project.category];
+
+  return (
+    <div className="space-y-5">
+      {/* Category + Featured badge */}
+      <div className="flex items-center justify-between">
+        <span
+          className={`inline-flex items-center gap-2 rounded-full bg-gradient-to-r ${categoryGradient} px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-sm`}
+        >
+          {getCategoryLabel(project.category)}
+        </span>
+        {project.featured && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/20 px-3 py-1 text-xs font-semibold text-amber-500">
+            <span className="h-2 w-2 rounded-full bg-amber-500" /> Featured
+          </span>
+        )}
+      </div>
+
+      {/* Title & Description */}
+      <div className="space-y-2">
+        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+          {project.title}
+        </h3>
+        {project.subtitle && (
+          <p className="text-sm uppercase tracking-wide text-blue-500 dark:text-blue-300">
+            {project.subtitle}
+          </p>
+        )}
+        <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+          {project.description}
+        </p>
+        {project.notes && (
+          <ul className="list-disc space-y-1 pl-5 text-sm text-gray-500 dark:text-gray-400">
+            {project.notes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Meta */}
+      <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+        <ProjectMeta title="Technologies" items={project.technologies} />
+        <ProjectMeta title="Platforms" items={project.platforms} />
+        {project.tags && project.tags.length > 0 && (
+          <ProjectMeta title="Highlights" items={project.tags} />
+        )}
+        {project.jam && (
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              Game Jam
+            </h4>
+            <a
+              href={project.jam.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-blue-600 hover:text-purple-500 dark:text-blue-400"
+            >
+              {project.jam.name}
+              {project.jam.year && <span className="text-xs text-gray-400">({project.jam.year})</span>}
+            </a>
+          </div>
+        )}
+      </div>
+
+      {/* Links */}
+      {project.links.length > 0 && (
+        <div className="flex flex-wrap gap-3">
+          {project.links.map((link) => (
+            <AnimatedButton
+              key={`${project.id}-${link.url}`}
+              href={link.url}
+              variant="secondary"
+              className="text-sm"
+            >
+              {link.label}
+            </AnimatedButton>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProjectMeta({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="space-y-2">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        {title}
+      </h4>
+      <div className="flex flex-wrap gap-2">
+        {items.map((item) => (
+          <span
+            key={item}
+            className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+          >
+            {item}
+          </span>
+        ))}
       </div>
     </div>
   );

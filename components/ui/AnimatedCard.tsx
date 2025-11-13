@@ -7,12 +7,14 @@ import { ReactNode } from 'react';
 interface AnimatedCardProps {
   children: ReactNode;
   href?: string;
+  hrefTarget?: string;
+  hrefRel?: string;
   onClick?: () => void;
   className?: string;
   delay?: number;
 }
 
-export function AnimatedCard({ children, href, onClick, className = '', delay = 0 }: AnimatedCardProps) {
+export function AnimatedCard({ children, href, hrefTarget, hrefRel, onClick, className = '', delay = 0 }: AnimatedCardProps) {
   const { play: playHover } = useSound('hover');
   const { play: playClick } = useSound('click');
 
@@ -62,7 +64,7 @@ export function AnimatedCard({ children, href, onClick, className = '', delay = 
 
   if (href) {
     return (
-      <a href={href} className="block">
+      <a href={href} target={hrefTarget} rel={hrefRel} className="block">
         {cardContent}
       </a>
     );
