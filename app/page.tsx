@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { AnimatedCard } from "@/components/ui/AnimatedCard";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
 import { projects, Project } from "@/lib/data/projects";
@@ -81,6 +82,24 @@ export default function Home() {
             <AnimatedButton href="/projects" variant="secondary">
               View Projects
             </AnimatedButton>
+            <AnimatedButton href="/about#resume" variant="secondary">
+              View Resume
+            </AnimatedButton>
+          </motion.div>
+          
+          {/* Quick Resume Link */}
+          <motion.div
+            className="text-center pt-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 1 }}
+          >
+            <Link
+              href="/about"
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+            >
+              Quick Resume Information →
+            </Link>
           </motion.div>
         </motion.section>
 

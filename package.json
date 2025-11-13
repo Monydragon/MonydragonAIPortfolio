@@ -3,26 +3,45 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "create-admin": "tsx scripts/create-admin-user.ts",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f mongodb",
+    "docker:clean": "docker-compose down -v",
+    "docker:restart": "docker-compose restart mongodb",
+    "docker:status": "docker-compose ps"
   },
   "dependencies": {
+    "@fluentui/react-icons": "^2.0.314",
     "@types/node": "^22.7.5",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
+    "bcryptjs": "^2.4.3",
+    "date-fns": "^4.1.0",
     "framer-motion": "^11.18.2",
+    "mongoose": "^8.7.1",
     "next": "^15.0.0",
+    "next-auth": "^5.0.0-beta.25",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-markdown": "^9.0.1",
+    "rehype-highlight": "^7.0.0",
+    "rehype-raw": "^7.0.0",
+    "remark-gfm": "^4.0.0",
     "typescript": "^5.6.3"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "autoprefixer": "^10.4.20",
+    "dotenv": "^17.2.3",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.0.0",
     "postcss": "^8.4.47",
-    "tailwindcss": "^3.4.14"
+    "tailwindcss": "^3.4.14",
+    "tsx": "^4.20.6"
   }
 }

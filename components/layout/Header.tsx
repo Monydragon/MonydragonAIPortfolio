@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSound } from "@/hooks/useSound";
 import { usePathname } from "next/navigation";
 import { SoundToggle } from "@/components/ui/SoundToggle";
+import { AnimatedButton } from "@/components/ui/AnimatedButton";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

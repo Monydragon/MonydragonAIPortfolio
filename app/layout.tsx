@@ -3,6 +3,7 @@ import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PageTransition } from "@/components/ui/PageTransition";
+import { SessionProvider } from "@/components/providers/SessionProvider";
 import { APP_VERSION, LAST_UPDATED } from "@/lib/version";
 
 export const metadata: Metadata = {
@@ -21,13 +22,15 @@ export default function RootLayout({
         className="antialiased bg-white dark:bg-gray-950"
         suppressHydrationWarning
       >
-        <Header />
-        <main className="min-h-screen">
-          <PageTransition>
-            {children}
-          </PageTransition>
-        </main>
-        <Footer version={APP_VERSION} lastUpdated={LAST_UPDATED} />
+        <SessionProvider>
+          <Header />
+          <main className="min-h-screen">
+            <PageTransition>
+              {children}
+            </PageTransition>
+          </main>
+          <Footer version={APP_VERSION} lastUpdated={LAST_UPDATED} />
+        </SessionProvider>
       </body>
     </html>
   );
