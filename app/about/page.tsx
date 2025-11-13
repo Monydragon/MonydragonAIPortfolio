@@ -7,10 +7,34 @@ import { defaultResumeData } from "@/lib/resume";
 
 export default function AboutPage() {
   const skills = {
-    development: ["TypeScript", "JavaScript", "C#", ".NET", "Next.js", "React", "Node.js", "Python"],
+    development: [
+      "TypeScript",
+      "JavaScript",
+      "C#",
+      ".NET",
+      "Next.js",
+      "React",
+      "Node.js",
+      "Python",
+      "Blazor",
+      "MAUI",
+      "Avalonia",
+    ],
     ai: ["AI Integration Patterns", "LLM APIs", "Vector Databases", "Prompt Engineering"],
     architecture: ["System Design", "Scalable Architecture", "Microservices", "Cloud Infrastructure"],
-    tools: ["Git", "MongoDB", "PostgreSQL", "Docker", "AWS", "Azure"]
+    tools: [
+      "Git",
+      "GitKraken",
+      "JetBrains Rider",
+      "JetBrains Tooling",
+      "MongoDB",
+      "PostgreSQL",
+      "SQL",
+      "SQLite",
+      "Docker",
+      "AWS",
+      "Azure",
+    ]
   };
 
   return (

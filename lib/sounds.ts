@@ -4,17 +4,19 @@ export type SoundType = 'click' | 'hover' | 'navigation' | 'success' | 'error' |
 
 class SoundManager {
   private audioContext: AudioContext | null = null;
-  private soundsEnabled: boolean = true;
+  private soundsEnabled: boolean = false;
   private volume: number = 0.3;
+  private hasAttemptedInit = false;
 
   constructor() {
     if (typeof window !== 'undefined') {
-      // Initialize audio context on user interaction
-      this.initAudioContext();
+      this.loadPreferences();
     }
   }
 
   private initAudioContext() {
+    if (this.hasAttemptedInit) return;
+    this.hasAttemptedInit = true;
     try {
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     } catch (e) {
@@ -33,7 +35,7 @@ class SoundManager {
 
   // Generate sound using Web Audio API
   private generateSound(frequency: number, duration: number, type: 'sine' | 'square' | 'sawtooth' = 'sine'): void {
-    if (!this.soundsEnabled || !this.audioContext) return;
+    if (!this.soundsEnabled) return;
 
     this.ensureAudioContext();
     if (!this.audioContext) return;
@@ -89,7 +91,9 @@ class SoundManager {
 
   setEnabled(enabled: boolean): void {
     this.soundsEnabled = enabled;
-    // Store preference in localStorage
+    if (enabled) {
+      this.ensureAudioContext();
+    }
     if (typeof window !== 'undefined') {
       localStorage.setItem('soundsEnabled', enabled.toString());
     }
@@ -108,6 +112,9 @@ class SoundManager {
       const saved = localStorage.getItem('soundsEnabled');
       if (saved !== null) {
         this.soundsEnabled = saved === 'true';
+        if (this.soundsEnabled) {
+          this.initAudioContext();
+        }
       }
     }
   }
@@ -115,9 +122,4 @@ class SoundManager {
 
 // Singleton instance
 export const soundManager = new SoundManager();
-
-// Load preferences on initialization
-if (typeof window !== 'undefined') {
-  soundManager.loadPreferences();
-}
 

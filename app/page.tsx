@@ -122,14 +122,14 @@ export default function Home() {
             </div>
           </AnimatedCard>
 
-          <AnimatedCard href="/games" delay={0.25}>
+          <AnimatedCard href="/blog" delay={0.25}>
             <div className="space-y-3">
               <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white text-2xl font-bold mb-2">
-                G
+                B
               </div>
-              <h2 className="text-2xl font-bold">Games</h2>
+              <h2 className="text-2xl font-bold">Blog</h2>
               <p className="text-gray-600 dark:text-gray-400">
-                Play interactive experiences developed for jams, prototypes, and in-progress releases
+                Read about architecture insights, AI-first workflows, and development updates
               </p>
             </div>
           </AnimatedCard>

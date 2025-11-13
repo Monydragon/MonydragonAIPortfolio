@@ -5,6 +5,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSound } from "@/hooks/useSound";
 import { usePathname } from "next/navigation";
+import { SoundToggle } from "@/components/ui/SoundToggle";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -18,7 +19,6 @@ export function Header() {
     { href: "/experience", label: "Experience" },
     { href: "/projects", label: "Projects" },
     { href: "/blog", label: "Blog" },
-    { href: "/games", label: "Games" },
     { href: "/contact", label: "Contact" },
   ];
 
@@ -81,6 +81,7 @@ export function Header() {
                 </Link>
               );
             })}
+            <SoundToggle />
           </div>
 
           {/* Mobile Menu Button */}
@@ -150,6 +151,9 @@ export function Header() {
                   </Link>
                 </motion.div>
               ))}
+              <div className="pt-4">
+                <SoundToggle />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

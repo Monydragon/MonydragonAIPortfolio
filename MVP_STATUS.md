@@ -41,13 +41,12 @@
   - Placeholder for blog system
   - Ready for future implementation
 
-- ✅ **Games Page** (`/games`)
-  - Placeholder for games section
-  - Ready for Phaser/Unity integration
-
 - ✅ **Contact Page** (`/contact`)
   - Contact information
   - Email and website links
+
+- ☑️ **Experience Page** (`/experience`)
+- ☑️ Games are now showcased within the Projects page, so the dedicated `/games` route was removed
 
 ## 🚧 Next Steps (Future Phases)
 

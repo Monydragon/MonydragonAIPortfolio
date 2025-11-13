@@ -1,5 +1,7 @@
 // Living Resume System - Auto-updates from site content
 
+export type ResumeMode = "concise" | "detailed";
+
 export interface ResumeData {
   personal: {
     name: string;
@@ -300,8 +302,20 @@ export const defaultResumeData: ResumeData = {
   projects: [],
   skills: {
     languages: ["TypeScript", "JavaScript", "C#", "Python"],
-    frameworks: ["Next.js", "React", ".NET", "Node.js"],
-    tools: ["Git", "MongoDB", "PostgreSQL", "Docker"],
+    frameworks: ["Next.js", "React", ".NET", "Node.js", "Blazor", "MAUI", "Avalonia"],
+    tools: [
+      "Git",
+      "GitKraken",
+      "JetBrains Rider",
+      "JetBrains Tooling",
+      "MongoDB",
+      "PostgreSQL",
+      "SQL",
+      "SQLite",
+      "Docker",
+      "AWS",
+      "Azure"
+    ],
     ai: ["AI Integration Patterns", "LLM APIs", "Vector Databases"]
   },
   education: [],
@@ -309,67 +323,87 @@ export const defaultResumeData: ResumeData = {
 };
 
 // Generate PDF-ready resume text
-export function generateResumeText(data: ResumeData): string {
-  let resume = `\n${data.personal.name.toUpperCase()}\n`;
+export function generateResumeText(data: ResumeData, options: { mode?: ResumeMode } = {}): string {
+  const mode: ResumeMode = options.mode ?? "detailed";
+
+  const experience = mode === "concise"
+    ? data.experience.slice(0, 3).map((exp) => ({
+        ...exp,
+        description: exp.description.slice(0, 3),
+      }))
+    : data.experience;
+
+  const projects = mode === "concise"
+    ? data.projects.filter((proj) => proj.featured).slice(0, 2)
+    : data.projects;
+
+  let resume = `${data.personal.name.toUpperCase()}\n`;
   resume += `${data.personal.title}\n\n`;
   resume += `Email: ${data.personal.email}\n`;
   resume += `Website: ${data.personal.website}\n`;
   if (data.personal.location) {
     resume += `Location: ${data.personal.location}\n`;
   }
-  resume += `\n${'='.repeat(60)}\n\n`;
-  
+  resume += `\n${"=".repeat(70)}\n\n`;
+
   resume += `SUMMARY\n`;
-  resume += `${'-'.repeat(60)}\n`;
+  resume += `${"-".repeat(70)}\n`;
   resume += `${data.personal.summary}\n\n`;
-  
+
+  resume += `CORE SKILLS\n`;
+  resume += `${"-".repeat(70)}\n`;
+  resume += `Languages & Frameworks: ${[
+    ...data.skills.languages,
+    ...data.skills.frameworks,
+  ].join(", ")}\n`;
+  resume += `Tools & Platforms: ${data.skills.tools.join(", ")}\n`;
+  resume += `AI & ML: ${data.skills.ai.join(", ")}\n\n`;
+
   resume += `EXPERIENCE\n`;
-  resume += `${'-'.repeat(60)}\n`;
-  data.experience.forEach(exp => {
+  resume += `${"-".repeat(70)}\n`;
+  experience.forEach((exp) => {
     resume += `\n${exp.title} | ${exp.company}`;
     if (exp.location) resume += ` | ${exp.location}`;
-    resume += `\n${exp.startDate} - ${exp.current ? 'Present' : exp.endDate || 'Present'}\n`;
-    exp.description.forEach(desc => {
+    const range = `${exp.startDate} - ${exp.current ? "Present" : exp.endDate || "Present"}`;
+    resume += `\n${range}\n`;
+    exp.description.forEach((desc) => {
       resume += `• ${desc}\n`;
     });
     if (exp.technologies && exp.technologies.length > 0) {
-      resume += `Technologies: ${exp.technologies.join(', ')}\n`;
+      resume += `Technologies: ${exp.technologies.join(", ")}\n`;
     }
     resume += `\n`;
   });
-  
-  resume += `PROJECTS\n`;
-  resume += `${'-'.repeat(60)}\n`;
-  data.projects.forEach(project => {
-    resume += `\n${project.name}\n`;
-    resume += `${project.description}\n`;
-    resume += `Technologies: ${project.technologies.join(', ')}\n`;
-    if (project.url) resume += `Live: ${project.url}\n`;
-    if (project.githubUrl) resume += `GitHub: ${project.githubUrl}\n`;
+
+  if (projects.length > 0) {
+    resume += `PROJECT HIGHLIGHTS\n`;
+    resume += `${"-".repeat(70)}\n`;
+    projects.forEach((project) => {
+      resume += `\n${project.name}\n`;
+      resume += `${project.description}\n`;
+      resume += `Technologies: ${project.technologies.join(", ")}\n`;
+      if (project.url) resume += `Live: ${project.url}\n`;
+      if (project.githubUrl) resume += `GitHub: ${project.githubUrl}\n`;
+    });
     resume += `\n`;
-  });
-  
-  resume += `SKILLS\n`;
-  resume += `${'-'.repeat(60)}\n`;
-  resume += `Languages: ${data.skills.languages.join(', ')}\n`;
-  resume += `Frameworks: ${data.skills.frameworks.join(', ')}\n`;
-  resume += `Tools: ${data.skills.tools.join(', ')}\n`;
-  resume += `AI & ML: ${data.skills.ai.join(', ')}\n\n`;
-  
-  if (data.education.length > 0) {
+  }
+
+  if (data.education.length > 0 && mode === "detailed") {
     resume += `EDUCATION\n`;
-    resume += `${'-'.repeat(60)}\n`;
-    data.education.forEach(edu => {
+    resume += `${"-".repeat(70)}\n`;
+    data.education.forEach((edu) => {
       resume += `\n${edu.degree}\n`;
       resume += `${edu.institution}`;
       if (edu.location) resume += ` | ${edu.location}`;
       resume += `\n${edu.year}\n`;
     });
+    resume += `\n`;
   }
-  
-  resume += `\n${'='.repeat(60)}\n`;
-  resume += `Last Updated: ${new Date(data.lastUpdated).toLocaleDateString()}\n`;
-  
+
+  resume += `${"=".repeat(70)}\n`;
+  resume += `Generated: ${new Date(data.lastUpdated).toLocaleDateString()}\n`;
+  resume += `Mode: ${mode === "concise" ? "Concise (1 Page Target)" : "Detailed"}\n`;
+
   return resume;
 }
 

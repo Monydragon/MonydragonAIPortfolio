@@ -7,6 +7,8 @@ import { ReactNode } from 'react';
 interface AnimatedButtonProps {
   children: ReactNode;
   href?: string;
+  hrefTarget?: string;
+  hrefRel?: string;
   onClick?: () => void;
   variant?: 'primary' | 'secondary' | 'ghost';
   className?: string;
@@ -16,6 +18,8 @@ interface AnimatedButtonProps {
 export function AnimatedButton({ 
   children, 
   href, 
+  hrefTarget,
+  hrefRel,
   onClick, 
   variant = 'primary',
   className = '',
@@ -32,6 +36,8 @@ export function AnimatedButton({
     ghost: "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
   };
 
+  const sharedClassNames = `${baseStyles} ${variantStyles[variant]} ${className} ${disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`;
+
   const handleClick = () => {
     if (!disabled) {
       playClick();
@@ -45,9 +51,43 @@ export function AnimatedButton({
     }
   };
 
-  const buttonContent = (
+  const innerContent = (
+    <>
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        initial={false}
+      />
+      <motion.div
+        className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+        initial={false}
+      />
+      <span className="relative z-10 flex items-center gap-2 justify-center">{children}</span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <motion.a
+        href={href}
+        target={hrefTarget}
+        rel={hrefRel}
+        className={sharedClassNames}
+        onClick={handleClick}
+        onMouseEnter={handleMouseEnter}
+        whileHover={!disabled ? { scale: 1.05, y: -2 } : {}}
+        whileTap={!disabled ? { scale: 0.95 } : {}}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        {innerContent}
+      </motion.a>
+    );
+  }
+
+  return (
     <motion.button
-      className={`${baseStyles} ${variantStyles[variant]} ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      className={sharedClassNames}
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       disabled={disabled}
@@ -57,35 +97,8 @@ export function AnimatedButton({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      {/* Animated background gradient */}
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        initial={false}
-      />
-      
-      {/* Shine effect */}
-      <motion.div
-        className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-        initial={false}
-      />
-      
-      <span className="relative z-10">{children}</span>
+      {innerContent}
     </motion.button>
   );
-
-  if (href) {
-    return (
-      <motion.a
-        href={href}
-        className="inline-block"
-        onClick={handleClick}
-        onMouseEnter={handleMouseEnter}
-      >
-        {buttonContent}
-      </motion.a>
-    );
-  }
-
-  return buttonContent;
 }
 
