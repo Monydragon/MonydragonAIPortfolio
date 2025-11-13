@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     const [posts, total] = await Promise.all([
       BlogPost.find(query)
         .populate('author', 'name email')
-        .sort({ publishedAt: -1, createdAt: -1 })
+        .sort({ order: -1, publishedAt: -1, createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     await connectDB();
     
     const body = await request.json();
-    const { title, content, category, tags, published, featured, seoTitle, seoDescription, coverImage } = body;
+    const { title, content, category, tags, published, featured, seoTitle, seoDescription, coverImage, order } = body;
 
     // Generate slug from title
     const slug = title
@@ -116,6 +116,7 @@ export async function POST(request: NextRequest) {
       seoTitle,
       seoDescription,
       coverImage,
+      order: order || 0,
     });
 
     await post.populate('author', 'name email');

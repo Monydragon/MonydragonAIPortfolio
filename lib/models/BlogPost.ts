@@ -14,6 +14,7 @@ export interface IBlogPost extends Document {
   seoTitle?: string;
   seoDescription?: string;
   coverImage?: string;
+  order: number;
   createdAt: Date;
   updatedAt: Date;
   publishedAt?: Date;
@@ -80,6 +81,11 @@ const BlogPostSchema = new Schema<IBlogPost>(
     },
     coverImage: {
       type: String,
+    },
+    order: {
+      type: Number,
+      default: 0,
+      index: true,
     },
     publishedAt: {
       type: Date,

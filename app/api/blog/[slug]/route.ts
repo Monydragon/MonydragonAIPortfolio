@@ -83,6 +83,7 @@ export async function PUT(
     if (body.seoTitle !== undefined) post.seoTitle = body.seoTitle;
     if (body.seoDescription !== undefined) post.seoDescription = body.seoDescription;
     if (body.coverImage !== undefined) post.coverImage = body.coverImage;
+    if (body.order !== undefined) post.order = body.order;
 
     await post.save();
     await post.populate('author', 'name email');
