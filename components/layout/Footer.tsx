@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useMemo, useState, useEffect } from "react";
 
 interface FooterProps {
   version: string;
@@ -6,11 +9,23 @@ interface FooterProps {
 }
 
 export function Footer({ version, lastUpdated }: FooterProps) {
-  const formattedDate = new Date(lastUpdated).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Format date on client side to avoid hydration mismatches
+  const formattedDate = useMemo(() => {
+    if (!mounted) return '';
+    return new Date(lastUpdated).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  }, [lastUpdated, mounted]);
+
+  const currentYear = mounted ? new Date().getFullYear() : 2025;
 
   return (
     <footer className="border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
@@ -59,14 +74,14 @@ export function Footer({ version, lastUpdated }: FooterProps) {
                 <span className="font-medium">Version:</span> {version}
               </p>
               <p>
-                <span className="font-medium">Last Updated:</span> {formattedDate}
+                <span className="font-medium">Last Updated:</span> {formattedDate || 'Loading...'}
               </p>
             </div>
           </div>
         </div>
 
         <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800 text-center text-sm text-gray-600 dark:text-gray-400">
-          <p>&copy; {new Date().getFullYear()} Mony Dragon. All rights reserved.</p>
+          <p>&copy; {currentYear} Mony Dragon. All rights reserved.</p>
         </div>
       </div>
     </footer>

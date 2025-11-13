@@ -17,12 +17,74 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #3b82f6, #8b5cf6);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #2563eb, #7c3aed);
+}
+
+/* Selection color */
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: inherit;
+}
+
+/* Fix for gradient text clipping - ensure descenders are visible */
+.bg-clip-text {
+  line-height: 1.2;
+  padding-bottom: 0.1em;
+  display: inline-block;
+  overflow: visible;
+}
+
+/* Extra padding for larger headings */
+h1.bg-clip-text,
+.text-5xl.bg-clip-text,
+.text-6xl.bg-clip-text,
+.text-7xl.bg-clip-text,
+.text-8xl.bg-clip-text {
+  line-height: 1.15;
+  padding-bottom: 0.15em;
+}
+
+h2.bg-clip-text,
+.text-4xl.bg-clip-text {
+  line-height: 1.2;
+  padding-bottom: 0.12em;
+}
+
+h3.bg-clip-text,
+.text-2xl.bg-clip-text,
+.text-3xl.bg-clip-text {
+  line-height: 1.25;
+  padding-bottom: 0.1em;
 }
 
