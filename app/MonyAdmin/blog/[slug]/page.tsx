@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 
-const BlogEditor = dynamic(() => import("@/components/MonyAdmin/BlogEditor"), {
+const BlogEditor = dynamic(() => import("@/components/admin/BlogEditor"), {
   ssr: false,
 });
 

@@ -6,10 +6,14 @@ import { soundManager } from "@/lib/sounds";
 import { useSound } from "@/hooks/useSound";
 
 export function SoundToggle() {
-  const [enabled, setEnabled] = useState(() => soundManager.isEnabled());
+  // Start with false to avoid hydration mismatch, then update on client
+  const [enabled, setEnabled] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { play: playSuccess } = useSound("success", true);
 
   useEffect(() => {
+    // Only check localStorage on client side
+    setMounted(true);
     soundManager.loadPreferences();
     setEnabled(soundManager.isEnabled());
   }, []);
@@ -22,6 +26,15 @@ export function SoundToggle() {
       playSuccess();
     }
   };
+
+  // Don't render until mounted to avoid hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="relative flex items-center justify-center rounded-full border border-gray-200 dark:border-gray-800 px-3 py-2 text-sm">
+        <div className="h-5 w-5" />
+      </div>
+    );
+  }
 
   return (
     <motion.button

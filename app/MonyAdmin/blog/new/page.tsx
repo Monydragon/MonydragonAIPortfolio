@@ -7,7 +7,7 @@ import { AnimatedButton } from "@/components/ui/AnimatedButton";
 import dynamic from "next/dynamic";
 
 // Dynamically import the editor to avoid SSR issues
-const BlogEditor = dynamic(() => import("@/components/MonyAdmin/BlogEditor"), {
+const BlogEditor = dynamic(() => import("@/components/admin/BlogEditor"), {
   ssr: false,
 });
 

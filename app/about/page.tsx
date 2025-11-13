@@ -67,13 +67,13 @@ export default function AboutPage() {
           </h2>
           <div className="prose prose-lg dark:prose-invert max-w-none">
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg">
-              I'm pivoting from traditional software development to embrace AI-first workflows.
+              I&apos;m pivoting from traditional software development to embrace AI-first workflows.
               My focus is on architecture, modern web technologies, and creating engaging
-              interactive experiences that push the boundaries of what's possible.
+              interactive experiences that push the boundaries of what&apos;s possible.
             </p>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg">
               This portfolio represents my exploration of AI integration patterns, system design,
-              and the future of web development. I'm passionate about building systems that are
+              and the future of web development. I&apos;m passionate about building systems that are
               not just functional, but intelligent, scalable, and delightful to use.
             </p>
           </div>
@@ -173,10 +173,10 @@ export default function AboutPage() {
           </h2>
           <div className="prose prose-lg dark:prose-invert max-w-none">
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg">
-              I'm deeply interested in system architecture and design patterns. My work focuses
+              I&apos;m deeply interested in system architecture and design patterns. My work focuses
               on creating robust, scalable solutions that can evolve with changing requirements.
               I believe in building systems that are not just functional today, but adaptable
-              for tomorrow's challenges.
+              for tomorrow&apos;s challenges.
             </p>
           </div>
         </motion.section>
