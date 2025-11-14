@@ -34,7 +34,7 @@ export function BlogCard({ post, delay = 0 }: BlogCardProps) {
 
   return (
     <AnimatedCard delay={delay}>
-      <Link href={`/blog/${post.slug}`}>
+      <Link href={`/blog/${post.slug}`} className="block cursor-pointer hover:opacity-90 transition-opacity">
         <div className="space-y-4">
           {/* Header */}
           <div className="flex items-start justify-between gap-4">

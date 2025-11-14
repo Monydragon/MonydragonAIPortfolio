@@ -14,6 +14,13 @@ export interface IBlogPost extends Document {
   seoTitle?: string;
   seoDescription?: string;
   coverImage?: string;
+  attachments?: Array<{
+    type: 'image' | 'gif' | 'file';
+    url: string;
+    filename: string;
+    size?: number;
+    uploadedAt: Date;
+  }>;
   order: number;
   createdAt: Date;
   updatedAt: Date;
@@ -81,6 +88,18 @@ const BlogPostSchema = new Schema<IBlogPost>(
     },
     coverImage: {
       type: String,
+    },
+    attachments: {
+      type: [
+        {
+          type: { type: String, enum: ['image', 'gif', 'file'], required: true },
+          url: { type: String, required: true },
+          filename: { type: String, required: true },
+          size: Number,
+          uploadedAt: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
     },
     order: {
       type: Number,

@@ -202,9 +202,18 @@ function SortableBlogItem({ id, post, index, onEdit, onDelete }: { id: string; p
   return (
     <div ref={setNodeRef} style={style}>
       <AnimatedCard delay={index * 0.05}>
-        <div className="flex items-start justify-between gap-4">
+        <div 
+          className="flex items-start justify-between gap-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/50 p-2 -m-2 rounded-lg transition-colors"
+          onClick={onEdit}
+        >
           <div className="flex items-center gap-3">
-            <div className="cursor-grab active:cursor-grabbing flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors" {...attributes} {...listeners} title="Drag to reorder">
+            <div 
+              className="cursor-grab active:cursor-grabbing flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors" 
+              {...attributes} 
+              {...listeners} 
+              onClick={(e) => e.stopPropagation()}
+              title="Drag to reorder"
+            >
               <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
               </svg>

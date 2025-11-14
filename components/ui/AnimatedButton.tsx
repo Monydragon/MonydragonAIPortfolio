@@ -9,10 +9,11 @@ interface AnimatedButtonProps {
   href?: string;
   hrefTarget?: string;
   hrefRel?: string;
-  onClick?: () => void;
+  onClick?: (e?: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => void;
   variant?: 'primary' | 'secondary' | 'ghost';
   className?: string;
   disabled?: boolean;
+  type?: 'button' | 'submit' | 'reset';
 }
 
 export function AnimatedButton({ 
@@ -23,7 +24,8 @@ export function AnimatedButton({
   onClick, 
   variant = 'primary',
   className = '',
-  disabled = false
+  disabled = false,
+  type = 'button'
 }: AnimatedButtonProps) {
   const { play: playClick } = useSound('click');
   const { play: playHover } = useSound('hover');
@@ -38,10 +40,10 @@ export function AnimatedButton({
 
   const sharedClassNames = `${baseStyles} ${variantStyles[variant]} ${className} ${disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`;
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
     if (!disabled) {
       playClick();
-      onClick?.();
+      onClick?.(e);
     }
   };
 
@@ -87,6 +89,7 @@ export function AnimatedButton({
 
   return (
     <motion.button
+      type={type}
       className={sharedClassNames}
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}

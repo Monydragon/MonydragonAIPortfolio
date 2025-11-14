@@ -22,14 +22,20 @@ export function Footer({ version, lastUpdated }: FooterProps) {
     setMounted(true);
   }, []);
 
-  // Format date on client side to avoid hydration mismatches
-  const formattedDate = useMemo(() => {
-    if (!mounted) return '';
-    return new Date(lastUpdated).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+  // Display date in yyyy-mm-dd format (already formatted from version.ts)
+  const displayDate = useMemo(() => {
+    if (!mounted) return lastUpdated;
+    // If it's already in yyyy-mm-dd format, use it directly
+    if (/^\d{4}-\d{2}-\d{2}$/.test(lastUpdated)) {
+      return lastUpdated;
+    }
+    // Otherwise, format it
+    try {
+      const date = new Date(lastUpdated);
+      return date.toISOString().split('T')[0];
+    } catch {
+      return lastUpdated;
+    }
   }, [lastUpdated, mounted]);
 
   const currentYear = mounted ? new Date().getFullYear() : 2025;
@@ -130,7 +136,7 @@ export function Footer({ version, lastUpdated }: FooterProps) {
                 <span className="font-medium">Version:</span> {version}
               </p>
               <p>
-                <span className="font-medium">Last Updated:</span> {formattedDate || 'Loading...'}
+                <span className="font-medium">Last Updated:</span> {displayDate || lastUpdated}
               </p>
             </div>
           </div>

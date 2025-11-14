@@ -46,6 +46,13 @@ export default function AdminDashboard() {
       color: "from-pink-500 to-pink-600",
     },
     {
+      title: "LLM Configuration",
+      description: "Configure AI providers and prompts",
+      href: "/MonyAdmin/llm",
+      icon: "🤖",
+      color: "from-amber-500 to-amber-600",
+    },
+    {
       title: "Backup & Export",
       description: "Download complete site data backup",
       href: "/api/backup",

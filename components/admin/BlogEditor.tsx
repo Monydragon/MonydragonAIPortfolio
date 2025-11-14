@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
 import { useSound } from "@/hooks/useSound";
+import { RichMarkdownEditor } from "./RichMarkdownEditor";
+import { AIPromptComposer } from "./AIPromptComposer";
+import { AIAssistant } from "./AIAssistant";
 
 interface BlogPost {
   _id?: string;
@@ -44,6 +47,8 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiStatus, setAiStatus] = useState<{ available: boolean; message?: string } | null>(null);
+  const [showPromptComposer, setShowPromptComposer] = useState(false);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
 
   useEffect(() => {
     checkAIStatus();
@@ -51,7 +56,7 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
 
   const checkAIStatus = async () => {
     try {
-      const response = await fetch("/api/blog/ai/status");
+      const response = await fetch("/api/llm/status");
       const data = await response.json();
       setAiStatus(data);
     } catch (error) {
@@ -104,7 +109,109 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
     });
   };
 
-  const handleAIGenerate = async (action: "generate" | "improve" | "excerpt" | "tags") => {
+  const formatText = async (content: string): Promise<string> => {
+    try {
+      const response = await fetch("/api/blog/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "format-text",
+          content: content,
+        }),
+      });
+
+      if (!response.ok) {
+        // If formatting fails, return original content
+        console.warn("Text formatting failed, using original content");
+        return content;
+      }
+
+      const data = await response.json();
+      return data.content || content;
+    } catch (error) {
+      // If formatting fails, return original content
+      console.warn("Text formatting error, using original content:", error);
+      return content;
+    }
+  };
+
+  const handleAIAction = async (action: string, options?: any) => {
+    setAiLoading(true);
+    playClick();
+
+    try {
+      let payload: any = { action };
+
+      if (action === "generate-full") {
+        payload = {
+          action: "generate-full",
+          topic: options.topic,
+          tone: options.tone || "professional",
+          generateMetadata: options.generateMetadata !== false,
+        };
+      } else if (action === "improve") {
+        payload = {
+          action: "improve",
+          content: formData.content,
+          instruction: options.instruction,
+          tone: options.tone,
+        };
+      } else if (action === "custom") {
+        payload = {
+          action: "custom",
+          customPrompt: options.prompt,
+          systemPrompt: options.systemPrompt,
+          maxTokens: options.maxTokens,
+          temperature: options.temperature,
+        };
+      } else {
+        // Legacy actions
+        return handleAIGenerate(action as any, options?.prompt, options?.systemPrompt, options);
+      }
+
+      const response = await fetch("/api/blog/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (action === "generate-full") {
+        // Format the generated content
+        const formattedContent = await formatText(data.content || formData.content);
+        // Update all fields from the generated blog post
+        setFormData({
+          ...formData,
+          title: data.title || formData.title,
+          content: formattedContent,
+          excerpt: data.excerpt || formData.excerpt,
+          category: data.category || formData.category,
+          tags: data.tags || formData.tags,
+          seoTitle: data.seoTitle || formData.seoTitle,
+          seoDescription: data.seoDescription || formData.seoDescription,
+          coverImage: data.coverImage || formData.coverImage,
+        });
+      } else if (action === "improve" || action === "custom") {
+        // Format the improved/custom generated content
+        const formattedContent = await formatText(data.content);
+        setFormData({ ...formData, content: formattedContent });
+      }
+    } catch (error: any) {
+      console.error("AI generation error:", error);
+      const errorMessage = error.message || "AI generation failed";
+      alert(errorMessage + "\n\nPlease check:\n- LLM is configured correctly in /MonyAdmin/llm\n- Ollama is running (if using Ollama)\n- Model is available (run: ollama pull <model-name>)");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleAIGenerate = async (action: "generate" | "improve" | "excerpt" | "tags" | "custom", customPrompt?: string, systemPrompt?: string, options?: { maxTokens?: number; temperature?: number }) => {
     setAiLoading(true);
     playClick();
 
@@ -147,6 +254,16 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
           }
           payload.content = formData.content;
           break;
+        case "custom":
+          if (!customPrompt) {
+            setAiLoading(false);
+            return;
+          }
+          payload.customPrompt = customPrompt;
+          if (systemPrompt) payload.systemPrompt = systemPrompt;
+          if (options?.maxTokens) payload.maxTokens = options.maxTokens;
+          if (options?.temperature !== undefined) payload.temperature = options.temperature;
+          break;
       }
 
       response = await fetch("/api/blog/ai/generate", {
@@ -155,27 +272,34 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
         body: JSON.stringify(payload),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
 
-      if (response.ok) {
-        if (action === "generate") {
-          setFormData({ ...formData, content: data.content });
-        } else if (action === "improve") {
-          setFormData({ ...formData, content: data.content });
-        } else if (action === "excerpt") {
-          setFormData({ ...formData, excerpt: data.content });
-        } else if (action === "tags") {
-          const newTags = data.content.split(",").map((t: string) => t.trim()).filter(Boolean);
-          setFormData({ ...formData, tags: [...new Set([...formData.tags, ...newTags])] });
-        }
-      } else {
-        alert(data.error || "AI generation failed");
+      if (action === "generate" || action === "improve" || action === "custom") {
+        // Format the generated content
+        const formattedContent = await formatText(data.content);
+        setFormData({ ...formData, content: formattedContent });
+      } else if (action === "excerpt") {
+        setFormData({ ...formData, excerpt: data.content });
+      } else if (action === "tags") {
+        const newTags = data.content.split(",").map((t: string) => t.trim()).filter(Boolean);
+        setFormData({ ...formData, tags: [...new Set([...formData.tags, ...newTags])] });
       }
     } catch (error: any) {
-      alert(error.message || "AI generation failed");
+      console.error("AI generation error:", error);
+      const errorMessage = error.message || "AI generation failed";
+      alert(errorMessage + "\n\nPlease check:\n- LLM is configured correctly in /MonyAdmin/llm\n- Ollama is running (if using Ollama)\n- Model is available (run: ollama pull <model-name>)");
     } finally {
       setAiLoading(false);
     }
+  };
+
+  const handleCustomPrompt = async (prompt: string, systemPrompt?: string, options?: { maxTokens?: number; temperature?: number }) => {
+    await handleAIGenerate("custom", prompt, systemPrompt, options);
   };
 
   return (
@@ -198,18 +322,16 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
               </p>
               <p className="text-sm mt-1">
                 {aiStatus.available
-                  ? "You can use AI to generate and improve blog content"
-                  : aiStatus.message || "Ollama is not running. Install from https://ollama.ai"}
+                  ? `You can use AI to generate and improve blog content (${aiStatus.provider || 'LLM'})`
+                  : aiStatus.message || "LLM is not configured. Go to /MonyAdmin/llm to configure."}
               </p>
             </div>
             {!aiStatus.available && (
               <a
-                href="https://ollama.ai"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/MonyAdmin/llm"
                 className="text-sm underline"
               >
-                Learn More
+                Configure LLM
               </a>
             )}
           </div>
@@ -235,36 +357,68 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Content (Markdown) *
+            Content (Rich Markdown Editor) *
           </label>
           {aiStatus?.available && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 type="button"
-                onClick={() => handleAIGenerate("generate")}
+                onClick={() => setShowAIAssistant(true)}
                 disabled={aiLoading}
-                className="px-3 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 disabled:opacity-50"
+                className="px-3 py-1 text-xs bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 font-semibold"
               >
-                {aiLoading ? "Generating..." : "🤖 Generate"}
+                ✨ AI Assistant
               </button>
               <button
                 type="button"
-                onClick={() => handleAIGenerate("improve")}
-                disabled={aiLoading || !formData.content}
-                className="px-3 py-1 text-xs bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 disabled:opacity-50"
+                onClick={async () => {
+                  if (!formData.content.trim()) {
+                    alert("Please add some content first to format");
+                    return;
+                  }
+                  setAiLoading(true);
+                  try {
+                    const response = await fetch("/api/blog/ai/generate", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "format-text",
+                        content: formData.content,
+                      }),
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.content) {
+                      setFormData({ ...formData, content: data.content });
+                    } else {
+                      alert(data.error || "Failed to format text");
+                    }
+                  } catch (error: any) {
+                    alert(error.message || "Failed to format text");
+                  } finally {
+                    setAiLoading(false);
+                  }
+                }}
+                disabled={aiLoading || !formData.content.trim()}
+                className="px-3 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 disabled:opacity-50 font-semibold"
+                title="Format and clean up the existing text with proper markdown, paragraphs, and headers"
               >
-                {aiLoading ? "Improving..." : "✨ Improve"}
+                {aiLoading ? "⏳ Formatting..." : "✨ Format & Clean Text"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowPromptComposer(true)}
+                disabled={aiLoading}
+                className="px-3 py-1 text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800 disabled:opacity-50"
+              >
+                Custom Prompt
               </button>
             </div>
           )}
         </div>
-        <textarea
-          value={formData.content}
-          onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-          required
-          rows={20}
-          className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-          placeholder="Write your blog post content in Markdown..."
+        <RichMarkdownEditor
+          content={formData.content}
+          onChange={(content) => setFormData({ ...formData, content })}
+          placeholder="Write your blog post content..."
         />
       </div>
 
@@ -297,9 +451,42 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
       {/* Category and Tags */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Category
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Category
+            </label>
+            {aiStatus?.available && (formData.title || formData.content) && (
+              <button
+                type="button"
+                onClick={async () => {
+                  setAiLoading(true);
+                  try {
+                    const response = await fetch("/api/blog/ai/generate", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "generate-category",
+                        title: formData.title,
+                        content: formData.content.substring(0, 500),
+                      }),
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.category) {
+                      setFormData((prev) => ({ ...prev, category: data.category }));
+                    }
+                  } catch (error) {
+                    alert("Failed to generate category");
+                  } finally {
+                    setAiLoading(false);
+                  }
+                }}
+                disabled={aiLoading}
+                className="px-2 py-1 text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800 disabled:opacity-50"
+              >
+                {aiLoading ? "..." : "🤖 AI"}
+              </button>
+            )}
+          </div>
           <input
             type="text"
             value={formData.category}
@@ -358,9 +545,42 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
       {/* SEO Fields */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            SEO Title
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              SEO Title
+            </label>
+            {aiStatus?.available && (formData.title || formData.content) && (
+              <button
+                type="button"
+                onClick={async () => {
+                  setAiLoading(true);
+                  try {
+                    const response = await fetch("/api/blog/ai/generate", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "generate-seo-title",
+                        title: formData.title,
+                        content: formData.content.substring(0, 500),
+                      }),
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.seoTitle) {
+                      setFormData((prev) => ({ ...prev, seoTitle: data.seoTitle }));
+                    }
+                  } catch (error) {
+                    alert("Failed to generate SEO title");
+                  } finally {
+                    setAiLoading(false);
+                  }
+                }}
+                disabled={aiLoading}
+                className="px-2 py-1 text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800 disabled:opacity-50"
+              >
+                {aiLoading ? "..." : "🤖 AI"}
+              </button>
+            )}
+          </div>
           <input
             type="text"
             value={formData.seoTitle}
@@ -371,9 +591,42 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            SEO Description
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              SEO Description
+            </label>
+            {aiStatus?.available && (formData.title || formData.content) && (
+              <button
+                type="button"
+                onClick={async () => {
+                  setAiLoading(true);
+                  try {
+                    const response = await fetch("/api/blog/ai/generate", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "generate-seo-description",
+                        title: formData.title,
+                        content: formData.content.substring(0, 500),
+                      }),
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.seoDescription) {
+                      setFormData((prev) => ({ ...prev, seoDescription: data.seoDescription }));
+                    }
+                  } catch (error) {
+                    alert("Failed to generate SEO description");
+                  } finally {
+                    setAiLoading(false);
+                  }
+                }}
+                disabled={aiLoading}
+                className="px-2 py-1 text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800 disabled:opacity-50"
+              >
+                {aiLoading ? "..." : "🤖 AI"}
+              </button>
+            )}
+          </div>
           <input
             type="text"
             value={formData.seoDescription}
@@ -387,15 +640,103 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
       {/* Cover Image */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Cover Image URL
+          Cover Image
         </label>
-        <input
-          type="url"
-          value={formData.coverImage}
-          onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
-          className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="https://example.com/image.jpg"
-        />
+        <div className="space-y-2">
+          <input
+            type="url"
+            value={formData.coverImage}
+            onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
+            className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="https://example.com/image.jpg or upload an image"
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                const input = document.createElement("input");
+                input.type = "file";
+                input.accept = "image/*";
+                input.onchange = async (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (!file) return;
+
+                  try {
+                    const formData = new FormData();
+                    formData.append("file", file);
+
+                    const response = await fetch("/api/upload", {
+                      method: "POST",
+                      body: formData,
+                    });
+
+                    if (!response.ok) {
+                      throw new Error("Upload failed");
+                    }
+
+                    const data = await response.json();
+                    setFormData((prev) => ({ ...prev, coverImage: data.url }));
+                  } catch (error: any) {
+                    alert(error.message || "Failed to upload image");
+                  }
+                };
+                input.click();
+              }}
+              className="px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 text-sm"
+            >
+              📤 Upload Image
+            </button>
+            {aiStatus?.available && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!formData.title && !formData.content) {
+                    alert("Please add a title or content first to generate a cover image suggestion");
+                    return;
+                  }
+                  setAiLoading(true);
+                  try {
+                    const response = await fetch("/api/blog/ai/generate", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "suggest-cover-image",
+                        title: formData.title,
+                        content: formData.content.substring(0, 500),
+                      }),
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.coverImageUrl) {
+                      setFormData((prev) => ({ ...prev, coverImage: data.coverImageUrl }));
+                    } else {
+                      alert("Could not generate cover image suggestion. Please provide a URL manually.");
+                    }
+                  } catch (error) {
+                    alert("Failed to generate cover image suggestion");
+                  } finally {
+                    setAiLoading(false);
+                  }
+                }}
+                disabled={aiLoading}
+                className="px-4 py-2 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 disabled:opacity-50 text-sm"
+              >
+                {aiLoading ? "..." : "🤖 Suggest Image"}
+              </button>
+            )}
+          </div>
+          {formData.coverImage && (
+            <div className="mt-2">
+              <img
+                src={formData.coverImage}
+                alt="Cover preview"
+                className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-800"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Options */}
@@ -434,6 +775,25 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
           {loading ? "Saving..." : post?._id ? "Update Post" : "Create Post"}
         </AnimatedButton>
       </div>
+
+      {/* AI Assistant Modal */}
+      {showAIAssistant && aiStatus?.available && (
+        <AIAssistant
+          onAction={handleAIAction}
+          onClose={() => setShowAIAssistant(false)}
+          available={aiStatus.available}
+          hasContent={!!formData.content}
+        />
+      )}
+
+      {/* AI Prompt Composer Modal */}
+      {showPromptComposer && aiStatus?.available && (
+        <AIPromptComposer
+          onGenerate={handleCustomPrompt}
+          onClose={() => setShowPromptComposer(false)}
+          available={aiStatus.available}
+        />
+      )}
     </form>
   );
 }
