@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
 import Link from "next/link";
@@ -22,13 +22,7 @@ export default function EditProjectPage() {
     sortPriority: 0,
   });
 
-  useEffect(() => {
-    if (slug) {
-      fetchProject();
-    }
-  }, [slug]);
-
-  const fetchProject = async () => {
+  const fetchProject = useCallback(async () => {
     try {
       const response = await fetch(`/api/projects/${slug}`);
       if (response.ok) {
@@ -49,7 +43,13 @@ export default function EditProjectPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [slug]);
+
+  useEffect(() => {
+    if (slug) {
+      fetchProject();
+    }
+  }, [slug, fetchProject]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

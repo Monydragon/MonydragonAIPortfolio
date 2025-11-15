@@ -33,6 +33,7 @@ export interface ILLMConfig extends Document {
     blogImprovement?: string;
     excerptGeneration?: string;
     tagGeneration?: string;
+    textFormatting?: string;
   };
   
   updatedBy: mongoose.Types.ObjectId;
@@ -100,6 +101,7 @@ const LLMConfigSchema = new Schema<ILLMConfig>(
       blogImprovement: String,
       excerptGeneration: String,
       tagGeneration: String,
+      textFormatting: String,
     },
     updatedBy: {
       type: Schema.Types.ObjectId,

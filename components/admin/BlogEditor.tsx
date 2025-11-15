@@ -46,7 +46,7 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
   const [tagInput, setTagInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiStatus, setAiStatus] = useState<{ available: boolean; message?: string } | null>(null);
+  const [aiStatus, setAiStatus] = useState<{ available: boolean; message?: string; provider?: string } | null>(null);
   const [showPromptComposer, setShowPromptComposer] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
 

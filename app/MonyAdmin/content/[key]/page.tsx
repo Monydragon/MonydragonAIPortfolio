@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
 import Link from "next/link";
@@ -15,13 +15,7 @@ export default function EditContentPage() {
     content: "",
   });
 
-  useEffect(() => {
-    if (key) {
-      fetchContent();
-    }
-  }, [key]);
-
-  const fetchContent = async () => {
+  const fetchContent = useCallback(async () => {
     try {
       const response = await fetch(`/api/content/${key}`);
       if (response.ok) {
@@ -38,7 +32,13 @@ export default function EditContentPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [key]);
+
+  useEffect(() => {
+    if (key) {
+      fetchContent();
+    }
+  }, [key, fetchContent]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

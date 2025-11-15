@@ -48,7 +48,7 @@ export const authConfig: NextAuthConfig = {
           }
 
           return {
-            id: user._id.toString(),
+            id: (user._id as any).toString(),
             email: user.email,
             name: user.name,
             role: user.role,

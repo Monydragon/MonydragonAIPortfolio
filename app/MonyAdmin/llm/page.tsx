@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
@@ -60,15 +60,6 @@ export default function LLMConfigPage() {
     checkStatus();
   }, []);
 
-  // Fetch available models when provider or API keys change
-  useEffect(() => {
-    if (config.provider && config.provider !== "none") {
-      fetchAvailableModels(config.provider);
-    } else {
-      setAvailableModels([]);
-    }
-  }, [config.provider, config.ollamaBaseUrl, config.openaiApiKey, config.anthropicApiKey, config.googleApiKey]); // Refetch when provider, base URL, or API keys change
-
   const fetchConfig = async () => {
     try {
       const response = await fetch("/api/llm/config");
@@ -95,7 +86,7 @@ export default function LLMConfigPage() {
     }
   };
 
-  const fetchAvailableModels = async (provider: LLMProvider) => {
+  const fetchAvailableModels = useCallback(async (provider: LLMProvider) => {
     setLoadingModels(true);
     try {
       let url = `/api/llm/models?provider=${provider}`;
@@ -123,7 +114,16 @@ export default function LLMConfigPage() {
     } finally {
       setLoadingModels(false);
     }
-  };
+  }, [config.ollamaBaseUrl, config.openaiApiKey, config.googleApiKey]);
+
+  // Fetch available models when provider or API keys change
+  useEffect(() => {
+    if (config.provider && config.provider !== "none") {
+      fetchAvailableModels(config.provider);
+    } else {
+      setAvailableModels([]);
+    }
+  }, [config.provider, fetchAvailableModels]);
 
   const handleSave = async () => {
     setSaving(true);

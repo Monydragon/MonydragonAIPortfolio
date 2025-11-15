@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import connectDB from "@/lib/mongodb";
 import LLMConfig from "@/lib/models/LLMConfig";
 import User from "@/lib/models/User";
+import mongoose from "mongoose";
 
 // GET /api/llm/config - Get LLM configuration
 export async function GET() {
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
       if (defaultMaxTokens !== undefined) config.defaultMaxTokens = defaultMaxTokens;
       if (defaultTemperature !== undefined) config.defaultTemperature = defaultTemperature;
       if (customPrompts !== undefined) config.customPrompts = customPrompts;
-      config.updatedBy = adminUser._id;
+      config.updatedBy = adminUser._id as mongoose.Types.ObjectId;
 
       await config.save();
     } else {
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
         defaultMaxTokens: defaultMaxTokens || 2000,
         defaultTemperature: defaultTemperature ?? 0.7,
         customPrompts: customPrompts || {},
-        updatedBy: adminUser._id,
+        updatedBy: adminUser._id as mongoose.Types.ObjectId,
       });
     }
 

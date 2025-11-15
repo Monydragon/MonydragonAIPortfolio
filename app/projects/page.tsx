@@ -40,12 +40,16 @@ const categoryLabels: Record<ProjectCategory, string> = {
   "unity-asset": "Unity Assets",
   "rpgmaker-plugin": "RPG Maker Plugins",
   game: "Games",
+  web: "Web",
+  other: "Other",
 };
 
 const categoryGradients: Record<ProjectCategory, string> = {
   "unity-asset": "from-blue-500 via-blue-400 to-purple-500",
   "rpgmaker-plugin": "from-emerald-500 via-teal-400 to-sky-500",
   game: "from-pink-500 via-purple-500 to-indigo-500",
+  web: "from-cyan-500 via-blue-400 to-indigo-500",
+  other: "from-gray-500 via-gray-400 to-gray-600",
 };
 
 const sortProjects = (items: Project[]) => {

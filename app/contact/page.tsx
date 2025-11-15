@@ -139,7 +139,7 @@ export default function ContactPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            Let's connect! Reach out through any of these platforms
+            Let&apos;s connect! Reach out through any of these platforms
           </motion.p>
         </motion.section>
 
@@ -246,10 +246,10 @@ export default function ContactPage() {
             transition={{ duration: 0.6, delay: 0.8 }}
           >
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              Let's Build Something Amazing Together
+              Let&apos;s Build Something Amazing Together
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Whether you're interested in collaboration, have a project in mind, or just want to chat about technology and game development, I'd love to hear from you!
+              Whether you&apos;re interested in collaboration, have a project in mind, or just want to chat about technology and game development, I&apos;d love to hear from you!
             </p>
           </motion.div>
         </motion.section>

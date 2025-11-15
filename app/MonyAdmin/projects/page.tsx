@@ -249,14 +249,14 @@ function SortableProjectItem({ id, project, index, total, onEdit, onDelete }: { 
           </div>
           <div className="flex items-center gap-2">
             <AnimatedButton
-              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              onClick={(e) => { e?.stopPropagation(); onEdit(); }}
               variant="secondary"
               className="px-4 py-2 text-sm"
             >
               Edit
             </AnimatedButton>
             <button
-              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              onClick={(e) => { e?.stopPropagation(); onDelete(); }}
               className="px-4 py-2 text-sm bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
             >
               Delete

@@ -5,10 +5,13 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
+    "build:production": "tsx scripts/build-production.ts",
     "start": "next start",
     "lint": "next lint",
     "create-admin": "tsx scripts/create-admin-user.ts",
     "migrate-data": "tsx scripts/migrate-static-data.ts",
+    "db:export": "bash scripts/export-mongodb.sh",
+    "db:import": "bash scripts/import-mongodb.sh",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f mongodb",

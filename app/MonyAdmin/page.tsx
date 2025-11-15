@@ -53,11 +53,25 @@ export default function AdminDashboard() {
       color: "from-amber-500 to-amber-600",
     },
     {
+      title: "Database Manager",
+      description: "Backup and restore MongoDB database",
+      href: "/MonyAdmin/database",
+      icon: "🗄️",
+      color: "from-indigo-500 to-indigo-600",
+    },
+    {
+      title: "Settings",
+      description: "Change password and manage account",
+      href: "/MonyAdmin/settings",
+      icon: "⚙️",
+      color: "from-gray-500 to-gray-600",
+    },
+    {
       title: "Backup & Export",
-      description: "Download complete site data backup",
+      description: "Download complete site data backup (JSON)",
       href: "/api/backup",
       icon: "💾",
-      color: "from-indigo-500 to-indigo-600",
+      color: "from-teal-500 to-teal-600",
       isDownload: true,
     },
   ];

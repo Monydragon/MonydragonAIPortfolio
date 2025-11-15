@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { BlogCard } from "@/components/blog/BlogCard";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
@@ -34,11 +34,7 @@ export default function BlogPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => {
-    fetchPosts();
-  }, [search, selectedCategory, selectedTag, showFeatured, page]);
-
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -73,7 +69,11 @@ export default function BlogPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, selectedCategory, selectedTag, showFeatured, page]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
   return (
     <div className="container mx-auto px-4 py-16 max-w-6xl">

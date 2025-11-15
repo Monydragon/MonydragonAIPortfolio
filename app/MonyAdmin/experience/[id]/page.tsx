@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
 import Link from "next/link";
@@ -23,13 +23,7 @@ export default function EditExperiencePage() {
     order: 0,
   });
 
-  useEffect(() => {
-    if (id) {
-      fetchExperience();
-    }
-  }, [id]);
-
-  const fetchExperience = async () => {
+  const fetchExperience = useCallback(async () => {
     try {
       const response = await fetch(`/api/experience/${id}`);
       if (response.ok) {
@@ -51,7 +45,13 @@ export default function EditExperiencePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      fetchExperience();
+    }
+  }, [id, fetchExperience]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
 import { AnimatedCard } from "@/components/ui/AnimatedCard";
@@ -48,11 +48,7 @@ export default function AdminBlogPage() {
     })
   );
 
-  useEffect(() => {
-    fetchPosts();
-  }, []);
-
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch("/api/blog");
@@ -66,7 +62,11 @@ export default function AdminBlogPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
   const handleDelete = async (slug: string) => {
     if (!confirm("Are you sure you want to delete this post?")) return;
@@ -211,7 +211,7 @@ function SortableBlogItem({ id, post, index, onEdit, onDelete }: { id: string; p
               className="cursor-grab active:cursor-grabbing flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors" 
               {...attributes} 
               {...listeners} 
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => e?.stopPropagation()}
               title="Drag to reorder"
             >
               <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,14 +248,14 @@ function SortableBlogItem({ id, post, index, onEdit, onDelete }: { id: string; p
           </div>
           <div className="flex items-center gap-2">
             <AnimatedButton
-              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              onClick={(e) => { e?.stopPropagation(); onEdit(); }}
               variant="secondary"
               className="px-4 py-2 text-sm"
             >
               Edit
             </AnimatedButton>
             <button
-              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              onClick={(e) => { e?.stopPropagation(); onDelete(); }}
               className="px-4 py-2 text-sm bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
             >
               Delete
