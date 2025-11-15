@@ -13,12 +13,14 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  // Don't apply auth checks to the login page
-  const isLoginPage = pathname === "/MonyAdmin/login";
+  // Public admin pages that should not require auth (e.g., login, initial admin creation)
+  const isPublicAdminPage =
+    pathname === "/MonyAdmin/login" ||
+    pathname === "/MonyAdmin/createMonyAdmin";
 
   useEffect(() => {
-    // Skip auth checks on login page
-    if (isLoginPage) {
+    // Skip auth checks on public admin pages
+    if (isPublicAdminPage) {
       return;
     }
 
@@ -27,10 +29,10 @@ export default function AdminLayout({
     } else if (status === "authenticated" && (session?.user as any)?.role !== "admin") {
       router.push("/");
     }
-  }, [session, status, router, isLoginPage]);
+  }, [session, status, router, isPublicAdminPage]);
 
   // Show loading only for protected pages
-  if (!isLoginPage && status === "loading") {
+  if (!isPublicAdminPage && status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -41,8 +43,11 @@ export default function AdminLayout({
     );
   }
 
-  // Allow login page to render, but protect other pages
-  if (!isLoginPage && (status === "unauthenticated" || (session?.user as any)?.role !== "admin")) {
+  // Allow public admin pages to render, but protect other pages
+  if (
+    !isPublicAdminPage &&
+    (status === "unauthenticated" || (session?.user as any)?.role !== "admin")
+  ) {
     return null;
   }
 

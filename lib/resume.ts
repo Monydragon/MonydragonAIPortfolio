@@ -49,7 +49,7 @@ export const defaultResumeData: ResumeData = {
   personal: {
     name: "Mony Dragon",
     title: "AI-First Developer & Architect",
-    email: "monydragon@hotmail.com",
+    email: "monydragon@gmail.com",
     website: "https://monydragon.com",
     summary: "Experienced software developer transitioning to AI-first workflows. Passionate about architecture, modern web technologies, and creating intelligent, scalable systems."
   },

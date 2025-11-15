@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
+
+type Message = { type: "error" | "success"; text: string };
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -26,7 +28,6 @@ export default function AdminLoginPage() {
       });
 
       if (result?.error) {
-        // Provide user-friendly error messages
         if (result.error === "CredentialsSignin") {
           setError("Invalid username or password. Please try again.");
         } else {
@@ -45,6 +46,7 @@ export default function AdminLoginPage() {
     }
   };
 
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-950 dark:to-gray-900">
       <motion.div
@@ -53,13 +55,13 @@ export default function AdminLoginPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-800">
-          <div className="text-center mb-8">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-800 space-y-6">
+          <div className="text-center">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              Login
+              Admin Login
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Enter your credentials to continue
+              Enter your credentials to continue.
             </p>
           </div>
 
@@ -71,7 +73,10 @@ export default function AdminLoginPage() {
             )}
 
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Username (Email)
               </label>
               <input
@@ -86,7 +91,10 @@ export default function AdminLoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Password
               </label>
               <input
