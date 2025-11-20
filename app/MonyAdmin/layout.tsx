@@ -15,7 +15,6 @@ export default function AdminLayout({
 
   // Public admin pages that should not require auth (e.g., login, initial admin creation)
   const isPublicAdminPage =
-    pathname === "/MonyAdmin/login" ||
     pathname === "/MonyAdmin/createMonyAdmin";
 
   useEffect(() => {
@@ -25,7 +24,7 @@ export default function AdminLayout({
     }
 
     if (status === "unauthenticated") {
-      router.push("/MonyAdmin/login");
+      router.push("/login?next=/MonyAdmin");
     } else if (status === "authenticated" && (session?.user as any)?.role !== "admin") {
       router.push("/");
     }

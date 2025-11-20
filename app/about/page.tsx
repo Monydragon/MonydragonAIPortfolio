@@ -34,26 +34,30 @@ export default function AboutPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchSiteContent() {
+    async function fetchData() {
       try {
         setLoading(true);
+        
+        // Fetch skills from new API
+        const skillsResponse = await fetch("/api/skills");
+        if (skillsResponse.ok) {
+          const skillsData = await skillsResponse.json();
+          const grouped = skillsData.skills || {};
+          setSkills({
+            development: grouped.development || [],
+            ai: grouped.ai || [],
+            architecture: grouped.architecture || [],
+            tools: grouped.tools || [],
+          });
+        }
+
+        // Fetch other content
         const response = await fetch("/api/content");
         if (!response.ok) {
           throw new Error("Failed to fetch site content");
         }
         const data = await response.json();
         const contents: SiteContent[] = data.contents || [];
-
-        // Extract skills
-        const skillsContent = contents.find((c) => c.key === "about_skills");
-        if (skillsContent?.content) {
-          setSkills({
-            development: skillsContent.content.development || [],
-            ai: skillsContent.content.ai || [],
-            architecture: skillsContent.content.architecture || [],
-            tools: skillsContent.content.tools || [],
-          });
-        }
 
         // Extract summary
         const summaryContent = contents.find((c) => c.key === "about_summary");
@@ -73,14 +77,14 @@ export default function AboutPage() {
           setArchitecture(archContent.content);
         }
       } catch (err: any) {
-        console.error("Error fetching site content:", err);
+        console.error("Error fetching data:", err);
         // Use defaults if fetch fails
       } finally {
         setLoading(false);
       }
     }
 
-    fetchSiteContent();
+    fetchData();
   }, []);
 
   return (

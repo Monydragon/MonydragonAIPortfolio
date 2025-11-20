@@ -13,10 +13,17 @@ export default function AdminDashboard() {
 
   const handleSignOut = async () => {
     await signOut({ redirect: false });
-      router.push("/MonyAdmin/login");
+      router.push("/login");
   };
 
   const adminSections = [
+    {
+      title: "Apps",
+      description: "Manage multiple apps from a single dashboard",
+      href: "/MonyAdmin/apps",
+      icon: "🧩",
+      color: "from-cyan-500 to-cyan-600",
+    },
     {
       title: "Blog Posts",
       description: "Create, edit, and manage blog posts",
@@ -58,6 +65,13 @@ export default function AdminDashboard() {
       href: "/MonyAdmin/database",
       icon: "🗄️",
       color: "from-indigo-500 to-indigo-600",
+    },
+    {
+      title: "Skills",
+      description: "Manage your skills and expertise",
+      href: "/MonyAdmin/skills",
+      icon: "🎯",
+      color: "from-emerald-500 to-emerald-600",
     },
     {
       title: "Settings",

@@ -1,0 +1,41 @@
+# Poste.io - Free, self-hosted mail server
+# Access UI at: https://mail.monydragon.com (or your configured domain)
+# Default admin: admin@monydragon.com / changeme (change immediately!)
+
+services:
+  poste:
+    image: analogic/poste.io:latest
+    container_name: poste-smtp
+    restart: unless-stopped
+    hostname: mail.monydragon.com
+    ports:
+      - "25:25"      # SMTP
+      - "80:80"      # HTTP (for Let's Encrypt)
+      - "110:110"    # POP3
+      - "143:143"    # IMAP
+      - "443:443"    # HTTPS
+      - "465:465"    # SMTPS
+      - "587:587"    # Submission (SMTP with STARTTLS)
+      - "993:993"    # IMAPS
+      - "995:995"    # POP3S
+    environment:
+      TZ: "America/Oklahoma_City"  # Change to your timezone
+      LETSENCRYPT_EMAIL: "admin@monydragon.com"
+    volumes:
+      - poste_data:/data
+    networks:
+      - monydragon-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  poste_data:
+    driver: local
+
+networks:
+  monydragon-network:
+    external: true
+

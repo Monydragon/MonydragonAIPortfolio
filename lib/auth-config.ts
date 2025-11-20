@@ -2,49 +2,79 @@ import type { NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import connectDB from "./mongodb";
 import User from "./models/User";
+import GoogleProvider from "next-auth/providers/google";
 
 export const authConfig: NextAuthConfig = {
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+    }),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        identifier: { label: "Email or Username", type: "text" },
         password: { label: "Password", type: "password" },
+        totp: { label: "2FA Code", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        const identifier = (credentials?.identifier || (credentials as any)?.email || "").toString().trim();
+        const password = (credentials?.password || "").toString();
+        const totp = (credentials as any)?.totp?.toString().trim();
+
+        if (!identifier || !password) {
           console.error("Missing credentials");
           return null;
         }
 
         try {
-          // Check if MongoDB URI is set
           if (!process.env.MONGODB_URI) {
             console.error("MONGODB_URI is not set in environment variables");
             return null;
           }
 
           await connectDB();
-          
-          // Try to find user by email (username can be email)
-          const user = await User.findOne({ email: credentials.email }).select("+password");
+
+          // Find by email or username (case-insensitive)
+          const query = identifier.includes("@")
+            ? { email: identifier.toLowerCase() }
+            : { username: identifier.toLowerCase() };
+
+          const user = await User.findOne(query).select("+password +twoFactorSecret +twoFactorBackupCodes");
 
           if (!user) {
-            console.error("User not found:", credentials.email);
+            console.error("User not found:", identifier);
             return null;
           }
 
-          const isPasswordValid = await user.comparePassword(credentials.password as string);
-
+          const isPasswordValid = await user.comparePassword(password);
           if (!isPasswordValid) {
-            console.error("Invalid password for user:", credentials.email);
+            console.error("Invalid password for user:", identifier);
             return null;
           }
 
-          // Check if user is admin
-          if (user.role !== "admin") {
-            console.error("User is not an admin:", credentials.email);
-            return null;
+          // Handle 2FA if enabled
+          if (user.twoFactorEnabled) {
+            if (!totp) {
+              // Signal to UI that 2FA code is required
+              throw new Error("2FA_REQUIRED");
+            }
+            try {
+              // eslint-disable-next-line
+              const speakeasy = require("speakeasy");
+              const ok = speakeasy.totp.verify({
+                secret: user.twoFactorSecret,
+                encoding: "base32",
+                token: String(totp),
+                window: 1,
+              });
+              if (!ok) {
+                return null;
+              }
+            } catch (e) {
+              console.error("2FA verification error:", (e as any)?.message || e);
+              return null;
+            }
           }
 
           return {
@@ -52,40 +82,88 @@ export const authConfig: NextAuthConfig = {
             email: user.email,
             name: user.name,
             role: user.role,
-          };
+            username: (user as any).username,
+          } as any;
         } catch (error: any) {
-          console.error("Auth error:", error.message || error);
-          // Return null on error - NextAuth will show generic error
+          // Rethrow known 2FA required for UI handling
+          if (typeof error?.message === "string" && error.message === "2FA_REQUIRED") {
+            throw error;
+          }
+          console.error("Auth error:", error?.message || error);
           return null;
         }
       },
     }),
   ],
   pages: {
-    signIn: "/MonyAdmin/login",
+    signIn: "/login",
   },
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // Ensure user exists in DB for OAuth logins
+      if (account && account.provider !== "credentials") {
+        try {
+          await connectDB();
+          const email = (user as any)?.email;
+          if (!email) return false;
+          let dbUser = await User.findOne({ email });
+          if (!dbUser) {
+            dbUser = new User({
+              email,
+              password: Math.random().toString(36) + Math.random().toString(36),
+              name: (user as any)?.name || email.split("@")[0],
+              role: "user",
+              emailVerified: new Date(),
+            });
+            await dbUser.save();
+          } else if (!dbUser.emailVerified) {
+            dbUser.emailVerified = new Date();
+            await dbUser.save();
+          }
+          (user as any).id = (dbUser._id as any).toString();
+          (user as any).role = dbUser.role;
+          (user as any).username = (dbUser as any).username;
+        } catch (e) {
+          console.error("OAuth signIn ensure user error:", (e as any)?.message || e);
+          return false;
+        }
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.role = (user as any).role;
+        token.id = (user as any).id;
+        (token as any).role = (user as any).role;
+        (token as any).username = (user as any).username;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).role = token.role;
+        (session.user as any).id = (token as any).id;
+        (session.user as any).role = (token as any).role;
+        (session.user as any).username = (token as any).username;
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      // Role-based default redirects after login
+      try {
+        const roleParam = new URL(url, baseUrl).searchParams.get("role");
+        if (roleParam === "admin") return `${baseUrl}/MonyAdmin`;
+        if (roleParam === "user") return `${baseUrl}/dashboard`;
+      } catch {}
+      // Allow same-origin navigations
+      if (url.startsWith(baseUrl)) return url;
+      return baseUrl;
     },
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET || "fallback-secret-for-development",
-  trustHost: true, // Required for NextAuth v5
-  debug: process.env.NODE_ENV === "development", // Enable debug in development
+  trustHost: true,
+  debug: process.env.NODE_ENV === "development",
 };
 

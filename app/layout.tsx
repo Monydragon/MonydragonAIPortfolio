@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { APP_VERSION, LAST_UPDATED } from "@/lib/version";
+import FloatingAuthButton from "@/components/auth/FloatingAuthButton";
 
 export const metadata: Metadata = {
   title: "Mony Dragon - AI-First Developer Portfolio",
@@ -29,6 +30,7 @@ export default function RootLayout({
               {children}
             </PageTransition>
           </main>
+          <FloatingAuthButton />
           <Footer version={APP_VERSION} lastUpdated={LAST_UPDATED} />
         </SessionProvider>
       </body>
