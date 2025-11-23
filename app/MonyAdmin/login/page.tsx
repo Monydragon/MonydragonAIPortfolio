@@ -116,6 +116,19 @@ export default function AdminLoginPage() {
             >
               {loading ? "Signing in..." : "Sign In"}
             </AnimatedButton>
+
+            <div className="text-center pt-2">
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                New user?{" "}
+                <button
+                  type="button"
+                  onClick={() => router.push("/register")}
+                  className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                >
+                  Create an account
+                </button>
+              </p>
+            </div>
           </form>
         </div>
       </motion.div>

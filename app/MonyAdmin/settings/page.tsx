@@ -111,11 +111,11 @@ export default function SettingsPage() {
             </motion.div>
           )}
 
-          {/* Account Info */}
+          {/* Account Info & Registration Settings */}
           <AnimatedCard>
             <div className="space-y-4">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                Account Information
+                Account & Site Settings
               </h2>
               <div className="space-y-2">
                 <div>
@@ -137,6 +137,46 @@ export default function SettingsPage() {
                   <p className="mt-1 text-gray-900 dark:text-white capitalize">
                     {(session?.user as any)?.role || "admin"}
                   </p>
+                </div>
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-800 mt-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Registration Mode
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                    Control whether new users can self-register, require an invite code, or disable
+                    registration entirely.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <AnimatedButton
+                      type="button"
+                      variant="secondary"
+                      onClick={async () => {
+                        const mode = prompt('Set registration mode: "open", "invite-only", or "closed"', "open");
+                        if (!mode) return;
+                        const trimmed = mode.trim();
+                        if (!["open", "invite-only", "closed"].includes(trimmed)) {
+                          alert("Invalid mode. Use: open, invite-only, or closed.");
+                          return;
+                        }
+                        try {
+                          const res = await fetch("/api/site-config", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ registrationMode: trimmed }),
+                          });
+                          const data = await res.json();
+                          if (!res.ok) {
+                            throw new Error(data.error || "Failed to update registration mode");
+                          }
+                          alert(`Registration mode set to: ${data.registrationMode}`);
+                        } catch (err: any) {
+                          alert(err?.message || "Failed to update registration mode");
+                        }
+                      }}
+                    >
+                      Change Registration Mode
+                    </AnimatedButton>
+                  </div>
                 </div>
               </div>
             </div>

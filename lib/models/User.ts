@@ -5,8 +5,14 @@ export interface IUser extends Document {
   email: string;
   password: string;
   name: string;
+  firstName: string;
+  lastName: string;
+  middleName?: string;
   role: 'admin' | 'user' | 'guest';
   username: string;
+  phone?: string;
+  location?: string;
+  demographics?: string;
   emailVerified?: Date | null;
   twoFactorEnabled: boolean;
   twoFactorSecret?: string | null;
@@ -39,6 +45,20 @@ const UserSchema = new Schema<IUser>(
       minlength: [6, 'Password must be at least 6 characters'],
       select: false, // Don't return password by default
     },
+    firstName: {
+      type: String,
+      required: [true, 'First name is required'],
+      trim: true,
+    },
+    middleName: {
+      type: String,
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      required: [true, 'Last name is required'],
+      trim: true,
+    },
     name: {
       type: String,
       required: [true, 'Name is required'],
@@ -48,6 +68,18 @@ const UserSchema = new Schema<IUser>(
       type: String,
       enum: ['admin', 'user', 'guest'],
       default: 'user',
+    },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    location: {
+      type: String,
+      trim: true,
+    },
+    demographics: {
+      type: String,
+      trim: true,
     },
     emailVerified: {
       type: Date,
@@ -76,6 +108,12 @@ const UserSchema = new Schema<IUser>(
 // Hash password before saving
 UserSchema.pre('save', async function (next) {
   try {
+    // Ensure display name from first/last if not manually set
+    if (!this.name && (this.firstName || this.lastName)) {
+      const parts = [this.firstName, this.middleName, this.lastName].filter(Boolean);
+      this.name = parts.join(' ').trim();
+    }
+
     // Auto-generate username from email if missing
     if (!this.username && this.email) {
       const base = this.email.split('@')[0].toLowerCase().replace(/[^a-z0-9._-]/g, '');

@@ -1,12 +1,34 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import connectDB from "@/lib/mongodb";
+import User from "@/lib/models/User";
 
-// Temporary stub handler to satisfy Next.js routing.
-// Replace with real "current user" logic when implemented.
 export async function GET() {
-	return NextResponse.json(
-		{ ok: false, error: "Current user endpoint not yet implemented" },
-		{ status: 501 },
-	);
-}
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ authenticated: false }, { status: 200 });
+    }
 
+    await connectDB();
+
+    const user = await User.findById((session.user as any).id)
+      .select("-password -twoFactorSecret -twoFactorBackupCodes")
+      .lean();
+
+    if (!user) {
+      return NextResponse.json({ authenticated: false }, { status: 200 });
+    }
+
+    return NextResponse.json({
+      authenticated: true,
+      user,
+    });
+  } catch (err: any) {
+    return NextResponse.json(
+      { authenticated: false, error: err?.message || "Failed to load current user" },
+      { status: 500 },
+    );
+  }
+}
 

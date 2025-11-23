@@ -2,7 +2,8 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface ISkill extends Document {
   name: string;
-  category: 'languages' | 'frameworks' | 'tools' | 'ai' | 'development' | 'architecture';
+  // Free-form string linked to SkillCategory.value
+  category: string;
   order: number;
   createdAt: Date;
   updatedAt: Date;
@@ -17,8 +18,9 @@ const SkillSchema = new Schema<ISkill>(
     },
     category: {
       type: String,
-      enum: ['languages', 'frameworks', 'tools', 'ai', 'development', 'architecture'],
       required: [true, 'Category is required'],
+      trim: true,
+      lowercase: true,
     },
     order: {
       type: Number,

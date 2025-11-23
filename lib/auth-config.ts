@@ -135,6 +135,8 @@ export const authConfig: NextAuthConfig = {
         token.id = (user as any).id;
         (token as any).role = (user as any).role;
         (token as any).username = (user as any).username;
+        (token as any).emailVerified = (user as any).emailVerified ?? null;
+        (token as any).twoFactorEnabled = (user as any).twoFactorEnabled ?? false;
       }
       return token;
     },
@@ -143,6 +145,8 @@ export const authConfig: NextAuthConfig = {
         (session.user as any).id = (token as any).id;
         (session.user as any).role = (token as any).role;
         (session.user as any).username = (token as any).username;
+        (session.user as any).emailVerified = (token as any).emailVerified ?? null;
+        (session.user as any).twoFactorEnabled = (token as any).twoFactorEnabled ?? false;
       }
       return session;
     },

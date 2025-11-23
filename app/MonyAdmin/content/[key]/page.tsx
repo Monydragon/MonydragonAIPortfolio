@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
 import Link from "next/link";
+import { RichMarkdownEditor } from "@/components/admin/RichMarkdownEditor";
 
 export default function EditContentPage() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function EditContentPage() {
   const [formData, setFormData] = useState({
     content: "",
   });
+  const [isJsonMode, setIsJsonMode] = useState(false);
 
   const fetchContent = useCallback(async () => {
     try {
@@ -23,8 +25,10 @@ export default function EditContentPage() {
         // Format content for display
         if (typeof content.content === "string") {
           setFormData({ content: content.content });
+          setIsJsonMode(false);
         } else {
           setFormData({ content: JSON.stringify(content.content, null, 2) });
+          setIsJsonMode(true);
         }
       }
     } catch (error) {
@@ -45,12 +49,16 @@ export default function EditContentPage() {
     setSaving(true);
 
     try {
-      // Try to parse as JSON, if fails use as string
-      let parsedContent;
-      try {
-        parsedContent = JSON.parse(formData.content);
-      } catch {
-        parsedContent = formData.content;
+      // If in JSON mode, try to parse as JSON, otherwise store as string/markdown
+      let parsedContent: any = formData.content;
+      if (isJsonMode) {
+        try {
+          parsedContent = JSON.parse(formData.content);
+        } catch {
+          alert("Content is not valid JSON");
+          setSaving(false);
+          return;
+        }
       }
 
       const response = await fetch(`/api/content/${key}`, {
@@ -102,15 +110,40 @@ export default function EditContentPage() {
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         <form onSubmit={handleSubmit} className="space-y-6 bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-800">
           <div>
-            <label className="block text-sm font-medium mb-2">Content *</label>
-            <textarea
-              required
-              rows={16}
-              value={formData.content}
-              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 font-mono text-sm"
-            />
-            <p className="text-xs text-gray-500 mt-1">Enter plain text or valid JSON</p>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium">Content *</label>
+              <button
+                type="button"
+                onClick={() => setIsJsonMode(!isJsonMode)}
+                className="text-xs px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                {isJsonMode ? "Switch to Rich Editor" : "Switch to JSON Editor"}
+              </button>
+            </div>
+
+            {isJsonMode ? (
+              <>
+                <textarea
+                  required
+                  rows={16}
+                  value={formData.content}
+                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 font-mono text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">Enter valid JSON (will be stored as structured content).</p>
+              </>
+            ) : (
+              <>
+                <RichMarkdownEditor
+                  content={formData.content}
+                  onChange={(content) => setFormData({ ...formData, content })}
+                  placeholder="Edit this section content with rich markdown..."
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Content will be stored as markdown string.
+                </p>
+              </>
+            )}
           </div>
 
           <div className="flex gap-4">

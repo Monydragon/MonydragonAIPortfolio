@@ -74,6 +74,13 @@ export default function AdminDashboard() {
       color: "from-emerald-500 to-emerald-600",
     },
     {
+      title: "Users",
+      description: "Manage user accounts, roles, and verification",
+      href: "/MonyAdmin/users",
+      icon: "👥",
+      color: "from-orange-500 to-orange-600",
+    },
+    {
       title: "Settings",
       description: "Change password and manage account",
       href: "/MonyAdmin/settings",

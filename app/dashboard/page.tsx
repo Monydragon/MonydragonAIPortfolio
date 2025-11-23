@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { EmailVerificationBanner } from "@/components/auth/EmailVerificationBanner";
 
 export default function UserDashboardPage() {
 	const { data: session, status } = useSession();
@@ -30,29 +31,34 @@ export default function UserDashboardPage() {
 	}
 
 	return (
-		<div className="max-w-4xl mx-auto px-6 py-12">
-			<h1 className="text-3xl font-semibold mb-4">Welcome, {(session?.user as any)?.username || session?.user?.name || session?.user?.email}</h1>
-			<p className="text-gray-600 dark:text-gray-400 mb-8">
-				This is your dashboard. More features coming soon.
-			</p>
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-				<div className="rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-					<h2 className="text-xl font-medium mb-2">Profile</h2>
-					<p className="text-sm text-gray-600 dark:text-gray-400">
-						Username: {(session?.user as any)?.username || "—"}
-					</p>
-					<p className="text-sm text-gray-600 dark:text-gray-400">
-						Email: {session?.user?.email}
-					</p>
-					<p className="text-sm text-gray-600 dark:text-gray-400">
-						Role: {(session?.user as any)?.role}
-					</p>
-				</div>
-				<div className="rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-					<h2 className="text-xl font-medium mb-2">Security</h2>
-					<p className="text-sm text-gray-600 dark:text-gray-400">
-						Manage 2FA in settings (coming soon).
-					</p>
+		<div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+			<EmailVerificationBanner />
+			<div className="max-w-4xl mx-auto px-6 py-12">
+				<h1 className="text-3xl font-semibold mb-4">
+					Welcome, {(session?.user as any)?.username || session?.user?.name || session?.user?.email}
+				</h1>
+				<p className="text-gray-600 dark:text-gray-400 mb-8">
+					This is your dashboard. More features coming soon.
+				</p>
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+					<div className="rounded-xl border border-gray-200 dark:border-gray-800 p-6 bg-white dark:bg-gray-900">
+						<h2 className="text-xl font-medium mb-2">Profile</h2>
+						<p className="text-sm text-gray-600 dark:text-gray-400">
+							Username: {(session?.user as any)?.username || "—"}
+						</p>
+						<p className="text-sm text-gray-600 dark:text-gray-400">
+							Email: {session?.user?.email}
+						</p>
+						<p className="text-sm text-gray-600 dark:text-gray-400">
+							Role: {(session?.user as any)?.role}
+						</p>
+					</div>
+					<div className="rounded-xl border border-gray-200 dark:border-gray-800 p-6 bg-white dark:bg-gray-900">
+						<h2 className="text-xl font-medium mb-2">Security</h2>
+						<p className="text-sm text-gray-600 dark:text-gray-400">
+							Manage 2FA and account security in settings.
+						</p>
+					</div>
 				</div>
 			</div>
 		</div>
