@@ -81,8 +81,9 @@ export const authConfig: NextAuthConfig = {
             id: (user._id as any).toString(),
             email: user.email,
             name: user.name,
-            role: user.role,
             username: (user as any).username,
+            emailVerified: user.emailVerified ?? null,
+            twoFactorEnabled: user.twoFactorEnabled ?? false,
           } as any;
         } catch (error: any) {
           // Rethrow known 2FA required for UI handling
@@ -106,23 +107,45 @@ export const authConfig: NextAuthConfig = {
           await connectDB();
           const email = (user as any)?.email;
           if (!email) return false;
+          
           let dbUser = await User.findOne({ email });
+          
+          // Parse name from Google profile
+          const googleName = (user as any)?.name || (profile as any)?.name || email.split("@")[0];
+          const nameParts = googleName.split(" ");
+          const firstName = nameParts[0] || email.split("@")[0];
+          const lastName = nameParts.slice(1).join(" ") || "";
+          
           if (!dbUser) {
+            // Create new user with Google OAuth - auto-verify email since Google verifies it
             dbUser = new User({
               email,
-              password: Math.random().toString(36) + Math.random().toString(36),
-              name: (user as any)?.name || email.split("@")[0],
-              role: "user",
-              emailVerified: new Date(),
+              password: Math.random().toString(36) + Math.random().toString(36) + Math.random().toString(36),
+              firstName,
+              lastName,
+              name: googleName,
+              emailVerified: new Date(), // Google emails are pre-verified
             });
             await dbUser.save();
-          } else if (!dbUser.emailVerified) {
-            dbUser.emailVerified = new Date();
+            console.log(`[OAuth] Created new user via Google: ${email}`);
+          } else {
+            // Update existing user - verify email if not already verified
+            if (!dbUser.emailVerified) {
+              dbUser.emailVerified = new Date();
+            }
+            // Update name if missing or update from Google profile
+            if (!dbUser.firstName || !dbUser.lastName) {
+              dbUser.firstName = dbUser.firstName || firstName;
+              dbUser.lastName = dbUser.lastName || lastName;
+              dbUser.name = dbUser.name || googleName;
+            }
             await dbUser.save();
+            console.log(`[OAuth] Updated existing user via Google: ${email}`);
           }
+          
           (user as any).id = (dbUser._id as any).toString();
-          (user as any).role = dbUser.role;
           (user as any).username = (dbUser as any).username;
+          (user as any).emailVerified = dbUser.emailVerified;
         } catch (e) {
           console.error("OAuth signIn ensure user error:", (e as any)?.message || e);
           return false;
@@ -130,20 +153,32 @@ export const authConfig: NextAuthConfig = {
       }
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      // On sign in, use user data from authorize
       if (user) {
         token.id = (user as any).id;
-        (token as any).role = (user as any).role;
         (token as any).username = (user as any).username;
         (token as any).emailVerified = (user as any).emailVerified ?? null;
         (token as any).twoFactorEnabled = (user as any).twoFactorEnabled ?? false;
+      }
+      // On session update, fetch fresh user data from database
+      else if (trigger === "update" && (token as any)?.id) {
+        try {
+          await connectDB();
+          const dbUser = await User.findById((token as any).id);
+          if (dbUser) {
+            (token as any).emailVerified = dbUser.emailVerified ?? null;
+            (token as any).twoFactorEnabled = dbUser.twoFactorEnabled ?? false;
+          }
+        } catch (error) {
+          console.error("Error updating JWT token:", error);
+        }
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).id = (token as any).id;
-        (session.user as any).role = (token as any).role;
         (session.user as any).username = (token as any).username;
         (session.user as any).emailVerified = (token as any).emailVerified ?? null;
         (session.user as any).twoFactorEnabled = (token as any).twoFactorEnabled ?? false;
@@ -151,12 +186,6 @@ export const authConfig: NextAuthConfig = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Role-based default redirects after login
-      try {
-        const roleParam = new URL(url, baseUrl).searchParams.get("role");
-        if (roleParam === "admin") return `${baseUrl}/MonyAdmin`;
-        if (roleParam === "user") return `${baseUrl}/dashboard`;
-      } catch {}
       // Allow same-origin navigations
       if (url.startsWith(baseUrl)) return url;
       return baseUrl;

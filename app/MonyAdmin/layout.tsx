@@ -25,9 +25,8 @@ export default function AdminLayout({
 
     if (status === "unauthenticated") {
       router.push("/login?next=/MonyAdmin");
-    } else if (status === "authenticated" && (session?.user as any)?.role !== "admin") {
-      router.push("/");
     }
+    // Note: Permission checks are handled by individual API routes and pages
   }, [session, status, router, isPublicAdminPage]);
 
   // Show loading only for protected pages
@@ -43,10 +42,7 @@ export default function AdminLayout({
   }
 
   // Allow public admin pages to render, but protect other pages
-  if (
-    !isPublicAdminPage &&
-    (status === "unauthenticated" || (session?.user as any)?.role !== "admin")
-  ) {
+  if (!isPublicAdminPage && status === "unauthenticated") {
     return null;
   }
 

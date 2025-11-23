@@ -52,16 +52,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Upsert: update if exists, create if not
-    const siteContent = await SiteContent.findOneAndUpdate(
-      { key },
-      {
+    // Check if content exists to determine if we should increment version
+    const existingContent = await SiteContent.findOne({ key });
+    
+    let siteContent;
+    
+    if (existingContent) {
+      // Update existing content and increment version
+      siteContent = await SiteContent.findOneAndUpdate(
+        { key },
+        {
+          $set: {
+            content,
+            updatedBy: (session.user as any).id,
+          },
+          $inc: { version: 1 },
+        },
+        { new: true, runValidators: true }
+      );
+    } else {
+      // Create new content with version 1
+      siteContent = await SiteContent.create({
         key,
         content,
         updatedBy: (session.user as any).id,
-      },
-      { new: true, upsert: true, runValidators: true }
-    );
+        version: 1,
+      });
+    }
 
     return NextResponse.json(siteContent, { status: 201 });
   } catch (error: any) {

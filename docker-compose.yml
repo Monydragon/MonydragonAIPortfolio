@@ -4,9 +4,12 @@ services:
     container_name: mongodb
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "${MONGODB_PORT:-27017}:27017"
     environment:
       MONGO_INITDB_DATABASE: monydragon_portfolio
+      # Production: Set MONGO_INITDB_ROOT_USERNAME and MONGO_INITDB_ROOT_PASSWORD in .env.local
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-}
     volumes:
       - mongodb_data:/data/db
       - mongodb_config:/data/configdb
@@ -17,6 +20,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    # Production: Uncomment to enable authentication
+    # command: ["--auth"]
 
 volumes:
   mongodb_data:

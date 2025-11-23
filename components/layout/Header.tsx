@@ -20,6 +20,7 @@ export function Header() {
     { href: "/experience", label: "Experience" },
     { href: "/projects", label: "Projects" },
     { href: "/blog", label: "Blog" },
+    { href: "/sites/app-builder", label: "App Builder", highlight: true },
     { href: "/contact", label: "Contact" },
   ];
 
@@ -61,17 +62,19 @@ export function Header() {
                 >
                   <motion.span
                     className={`relative text-sm font-medium transition-colors ${
-                      isActive
+                      link.highlight
+                        ? "px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white"
+                        : isActive
                         ? "text-blue-600 dark:text-blue-400"
                         : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
                     }`}
-                    whileHover={{ y: -2 }}
+                    whileHover={{ y: -2, scale: link.highlight ? 1.05 : 1 }}
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.1 }}
                   >
                     {link.label}
-                    {isActive && (
+                    {isActive && !link.highlight && (
                       <motion.div
                         className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600"
                         layoutId="activeTab"

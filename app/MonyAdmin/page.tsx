@@ -6,10 +6,31 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { AnimatedCard } from "@/components/ui/AnimatedCard";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
+import { useEffect, useState } from "react";
 
 export default function AdminDashboard() {
   const { data: session } = useSession();
   const router = useRouter();
+  const [visitorStats, setVisitorStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchVisitorStats();
+  }, []);
+
+  const fetchVisitorStats = async () => {
+    try {
+      const res = await fetch("/api/visitors/track?days=7");
+      if (res.ok) {
+        const data = await res.json();
+        setVisitorStats(data);
+      }
+    } catch (error) {
+      console.error("Error fetching visitor stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut({ redirect: false });
@@ -60,6 +81,20 @@ export default function AdminDashboard() {
       color: "from-amber-500 to-amber-600",
     },
     {
+      title: "Game Credit Management",
+      description: "Configure games for credit earning system",
+      href: "/MonyAdmin/app-builder/games",
+      icon: "🎮",
+      color: "from-teal-500 to-teal-600",
+    },
+    {
+      title: "User Management",
+      description: "Unified user management: roles, permissions, credits, subscriptions",
+      href: "/MonyAdmin/users-unified",
+      icon: "👥",
+      color: "from-indigo-500 to-indigo-600",
+    },
+    {
       title: "Database Manager",
       description: "Backup and restore MongoDB database",
       href: "/MonyAdmin/database",
@@ -74,11 +109,11 @@ export default function AdminDashboard() {
       color: "from-emerald-500 to-emerald-600",
     },
     {
-      title: "Users",
-      description: "Manage user accounts, roles, and verification",
-      href: "/MonyAdmin/users",
-      icon: "👥",
-      color: "from-orange-500 to-orange-600",
+      title: "Visitor Analytics",
+      description: "Track visitors, locations, and site statistics",
+      href: "/MonyAdmin/visitors",
+      icon: "📊",
+      color: "from-cyan-500 to-cyan-600",
     },
     {
       title: "Settings",
@@ -192,9 +227,9 @@ export default function AdminDashboard() {
               <AnimatedCard delay={0.3}>
                 <div className="text-center">
                   <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                    -
+                    {loading ? "-" : visitorStats?.totalVisits?.toLocaleString() || "0"}
                   </div>
-                  <p className="text-gray-600 dark:text-gray-400">Total Views</p>
+                  <p className="text-gray-600 dark:text-gray-400">Total Visits (7 days)</p>
                 </div>
               </AnimatedCard>
             </div>

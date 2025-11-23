@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import connectDB from "@/lib/mongodb";
 import BlogPost from "@/lib/models/BlogPost";
+import User from "@/lib/models/User";
+import permissionService from "@/lib/services/permission-service";
 
 // GET /api/blog/[slug] - Get single post
 export async function GET(
@@ -13,7 +15,13 @@ export async function GET(
     
     const { slug } = await params;
     const session = await auth();
-    const isAdmin = session?.user && (session.user as any).role === 'admin';
+    let isAdmin = false;
+    if (session?.user) {
+      const user = await User.findOne({ email: session.user.email });
+      if (user) {
+        isAdmin = await permissionService.hasPermission(user._id, 'blog.view');
+      }
+    }
 
     const query: any = { slug };
     if (!isAdmin) {
@@ -51,8 +59,7 @@ export async function PUT(
 ) {
   try {
     const session = await auth();
-    
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -60,6 +67,18 @@ export async function PUT(
     }
 
     await connectDB();
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const canEdit = await permissionService.hasPermission(user._id, 'blog.edit');
+    if (!canEdit) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions' },
+        { status: 403 }
+      );
+    }
     
     const { slug } = await params;
     const body = await request.json();
@@ -105,8 +124,7 @@ export async function DELETE(
 ) {
   try {
     const session = await auth();
-    
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -114,6 +132,18 @@ export async function DELETE(
     }
 
     await connectDB();
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const canDelete = await permissionService.hasPermission(user._id, 'blog.delete');
+    if (!canDelete) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions' },
+        { status: 403 }
+      );
+    }
     
     const { slug } = await params;
     

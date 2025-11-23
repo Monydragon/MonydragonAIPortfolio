@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 export interface ISiteContent extends Document {
   key: string; // e.g., 'about_summary', 'about_story', 'skills', etc.
   content: any; // Flexible content structure
+  version: number; // Version number that increments on each update
   updatedBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -24,6 +25,11 @@ const SiteContentSchema = new Schema<ISiteContent>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+    },
+    version: {
+      type: Number,
+      default: 1,
+      min: 1,
     },
   },
   {

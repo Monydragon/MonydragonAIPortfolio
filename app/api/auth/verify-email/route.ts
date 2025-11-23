@@ -4,24 +4,48 @@ import VerificationToken from "@/lib/models/VerificationToken";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-	const { searchParams } = new URL(request.url);
-	const token = searchParams.get("token");
-	if (!token) {
-		return NextResponse.json({ error: "Missing token" }, { status: 400 });
+	try {
+		const { searchParams } = new URL(request.url);
+		const token = searchParams.get("token");
+		
+		if (!token) {
+			return NextResponse.redirect(new URL("/login?error=missing_token", request.url));
+		}
+		
+		await connectDB();
+		
+		// Find token and check expiration
+		const record = await VerificationToken.findOne({ token });
+		if (!record) {
+			return NextResponse.redirect(new URL("/login?error=invalid_token", request.url));
+		}
+		
+		// Check if token is expired
+		if (record.expiresAt < new Date()) {
+			await VerificationToken.deleteOne({ _id: record._id });
+			return NextResponse.redirect(new URL("/login?error=expired_token", request.url));
+		}
+		
+		const user = await User.findById(record.userId);
+		if (!user) {
+			return NextResponse.redirect(new URL("/login?error=user_not_found", request.url));
+		}
+		
+		// Verify email
+		if (!user.emailVerified) {
+			user.emailVerified = new Date();
+			await user.save();
+		}
+		
+		// Clean up token
+		await VerificationToken.deleteOne({ _id: record._id });
+		
+		// Redirect to login with success message
+		return NextResponse.redirect(new URL("/login?verified=1", request.url));
+	} catch (error: any) {
+		console.error("Email verification error:", error);
+		return NextResponse.redirect(new URL("/login?error=verification_failed", request.url));
 	}
-	await connectDB();
-	const record = await VerificationToken.findOne({ token });
-	if (!record) {
-		return NextResponse.json({ error: "Invalid or expired token" }, { status: 400 });
-	}
-	const user = await User.findById(record.userId);
-	if (!user) {
-		return NextResponse.json({ error: "User not found" }, { status: 404 });
-	}
-	user.emailVerified = new Date();
-	await user.save();
-	await VerificationToken.deleteOne({ _id: record._id });
-	return NextResponse.redirect(new URL("/login?verified=1", request.url));
 }
 
 

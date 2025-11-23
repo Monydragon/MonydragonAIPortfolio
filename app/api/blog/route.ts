@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import connectDB from "@/lib/mongodb";
 import BlogPost from "@/lib/models/BlogPost";
+import User from "@/lib/models/User";
+import permissionService from "@/lib/services/permission-service";
 
 // GET /api/blog - List all published posts (or all if admin)
 export async function GET(request: NextRequest) {
@@ -9,7 +11,13 @@ export async function GET(request: NextRequest) {
     await connectDB();
     
     const session = await auth();
-    const isAdmin = session?.user && (session.user as any).role === 'admin';
+    let isAdmin = false;
+    if (session?.user) {
+      const user = await User.findOne({ email: session.user.email });
+      if (user) {
+        isAdmin = await permissionService.hasPermission(user._id, 'blog.view');
+      }
+    }
     
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get('search');
@@ -76,8 +84,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -85,6 +92,18 @@ export async function POST(request: NextRequest) {
     }
 
     await connectDB();
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const canCreate = await permissionService.hasPermission(user._id, 'blog.create');
+    if (!canCreate) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions' },
+        { status: 403 }
+      );
+    }
     
     const body = await request.json();
     const { title, content, category, tags, published, featured, seoTitle, seoDescription, coverImage, order } = body;

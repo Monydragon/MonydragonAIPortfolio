@@ -3,9 +3,13 @@ import User from "@/lib/models/User";
 import VerificationToken from "@/lib/models/VerificationToken";
 import SiteConfig from "@/lib/models/SiteConfig";
 import InviteCode from "@/lib/models/InviteCode";
+import Referral from "@/lib/models/Referral";
+import AppBuilderSettings from "@/lib/models/AppBuilderSettings";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { sendMail } from "@/lib/mailer";
+import creditService from "@/lib/services/credit-service";
+import roleAssignmentService from "@/lib/services/role-assignment-service";
 
 export async function POST(request: Request) {
 	try {
@@ -20,6 +24,7 @@ export async function POST(request: Request) {
 			location,
 			demographics,
 			inviteCode,
+			referralCode,
 		} = await request.json();
 
 		if (!email || !password || !firstName || !lastName) {
@@ -77,12 +82,77 @@ export async function POST(request: Request) {
 			lastName,
 			name: fullName,
 			username: username || undefined,
-			role: "user",
 			phone: phone || undefined,
 			location: location || undefined,
 			demographics: demographics || undefined,
+			creditBalance: 0, // Will be set by credit service
 		});
 		await user.save();
+
+		// Assign default role
+		await roleAssignmentService.ensureUserRoles(user._id);
+
+		// Give new users free credits
+		const freeCredits = parseInt(process.env.APP_BUILDER_FREE_CREDITS || '100');
+		if (freeCredits > 0) {
+			await creditService.giveFreeCredits(
+				user._id,
+				freeCredits,
+				'Welcome bonus - Free credits to get started with App Builder'
+			);
+		}
+
+		// Handle referral code
+		if (referralCode) {
+			try {
+				const referralCodeUpper = String(referralCode).toUpperCase().trim();
+				// Find user by referral code (username or user ID)
+				const referrer = await User.findOne({
+					$or: [
+						{ username: referralCodeUpper.toLowerCase() },
+						{ _id: referralCodeUpper },
+					],
+				});
+
+				if (referrer && referrer._id.toString() !== user._id.toString()) {
+					// Get referral credits from settings
+					const settings = await AppBuilderSettings.findOne();
+					const referralCredits = settings?.referralCredits || parseInt(process.env.APP_BUILDER_REFERRAL_CREDITS || '100');
+
+					// Create referral record
+					await Referral.create({
+						referrerId: referrer._id,
+						referredId: user._id,
+						referralCode: referralCodeUpper,
+						creditsAwarded: referralCredits,
+						status: 'completed',
+						completedAt: new Date(),
+					});
+
+					// Award credits to both users
+					await creditService.addCredits({
+						userId: referrer._id,
+						amount: referralCredits,
+						type: 'earned',
+						source: 'referral',
+						description: `Referral bonus: ${user.name} signed up using your code`,
+						metadata: { referredUserId: user._id.toString() },
+					});
+
+					await creditService.addCredits({
+						userId: user._id,
+						amount: referralCredits,
+						type: 'earned',
+						source: 'referral',
+						description: `Referral signup bonus`,
+						metadata: { referrerId: referrer._id.toString() },
+					});
+				}
+			} catch (refError) {
+				console.error('Error processing referral:', refError);
+				// Don't fail registration if referral fails
+			}
+		}
 
 		// Create verification token
 		const token = crypto.randomBytes(32).toString("hex");

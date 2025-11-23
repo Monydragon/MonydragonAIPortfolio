@@ -6,6 +6,7 @@ import { PageTransition } from "@/components/ui/PageTransition";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { APP_VERSION, LAST_UPDATED } from "@/lib/version";
 import FloatingAuthButton from "@/components/auth/FloatingAuthButton";
+import VisitorTrackerWrapper from "@/components/analytics/VisitorTrackerWrapper";
 
 export const metadata: Metadata = {
   title: "Mony Dragon - AI-First Developer Portfolio",
@@ -24,6 +25,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <SessionProvider>
+          <VisitorTrackerWrapper />
           <Header />
           <main className="min-h-screen">
             <PageTransition>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
 
@@ -9,10 +9,34 @@ export function EmailVerificationBanner() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const emailVerified = (session?.user as any)?.emailVerified;
+  // Fetch user data to check email verification and admin status
+  useEffect(() => {
+    if (session?.user?.email) {
+      fetch(`/api/users?includeRoles=true&limit=1&search=${encodeURIComponent(session.user.email)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.users && data.users.length > 0) {
+            const user = data.users[0];
+            setEmailVerified(!!user.emailVerified);
+            // Check if user has Administrator role
+            const hasAdminRole = user.roles?.some((r: any) => r.name === 'Administrator');
+            setIsAdmin(hasAdminRole);
+          }
+        })
+        .catch(() => {
+          // Fallback to session data
+          setEmailVerified(!!(session?.user as any)?.emailVerified);
+        });
+    } else {
+      setEmailVerified(!!(session?.user as any)?.emailVerified);
+    }
+  }, [session]);
 
-  if (!session?.user || emailVerified) {
+  // Don't show banner for admins (they're always verified) or if email is verified
+  if (!session?.user || emailVerified || isAdmin) {
     return null;
   }
 

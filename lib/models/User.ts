@@ -8,7 +8,7 @@ export interface IUser extends Document {
   firstName: string;
   lastName: string;
   middleName?: string;
-  role: 'admin' | 'user' | 'guest';
+  roles: mongoose.Types.ObjectId[]; // Multiple roles (permission system)
   username: string;
   phone?: string;
   location?: string;
@@ -17,6 +17,12 @@ export interface IUser extends Document {
   twoFactorEnabled: boolean;
   twoFactorSecret?: string | null;
   twoFactorBackupCodes?: string[];
+  creditBalance: number; // Cached credit balance (calculated from transactions)
+  lastCreditUpdate?: Date; // Last time credit balance was updated
+  experienceLevel?: 'beginner' | 'intermediate' | 'advanced' | 'expert'; // User's experience level
+  timezone?: string; // User's timezone
+  bio?: string; // User bio/profile description
+  avatar?: string; // Avatar URL
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -64,10 +70,11 @@ const UserSchema = new Schema<IUser>(
       required: [true, 'Name is required'],
       trim: true,
     },
-    role: {
-      type: String,
-      enum: ['admin', 'user', 'guest'],
-      default: 'user',
+    roles: {
+      type: [Schema.Types.ObjectId],
+      ref: 'Role',
+      default: [],
+      index: true,
     },
     phone: {
       type: String,
@@ -98,6 +105,29 @@ const UserSchema = new Schema<IUser>(
       type: [String],
       default: undefined,
       select: false,
+    },
+    creditBalance: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    lastCreditUpdate: {
+      type: Date,
+    },
+    experienceLevel: {
+      type: String,
+      enum: ['beginner', 'intermediate', 'advanced', 'expert'],
+    },
+    timezone: {
+      type: String,
+      default: 'UTC',
+    },
+    bio: {
+      type: String,
+      maxlength: [2000, 'Bio cannot exceed 2000 characters'],
+    },
+    avatar: {
+      type: String,
     },
   },
   {
@@ -132,6 +162,9 @@ UserSchema.pre('save', async function (next) {
       }
       this.username = candidate;
     }
+
+    // Note: Role assignment is handled by roleAssignmentService
+    // This keeps the pre-save hook lightweight and avoids circular dependencies
 
     // Hash password if modified
     if (this.isModified('password')) {

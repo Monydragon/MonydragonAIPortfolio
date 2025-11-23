@@ -58,19 +58,53 @@ export async function PUT(
       );
     }
 
-    const siteContent = await SiteContent.findOneAndUpdate(
-      { key },
-      {
+    if (!key) {
+      return NextResponse.json(
+        { error: "Content key is required" },
+        { status: 400 }
+      );
+    }
+
+    const userId = (session.user as any).id;
+    if (!userId) {
+      return NextResponse.json(
+        { error: "User ID not found in session" },
+        { status: 401 }
+      );
+    }
+
+    // Check if content exists to determine if we should increment version
+    const existingContent = await SiteContent.findOne({ key });
+    
+    let siteContent;
+    
+    if (existingContent) {
+      // Update existing content and increment version
+      siteContent = await SiteContent.findOneAndUpdate(
+        { key },
+        {
+          $set: {
+            content,
+            updatedBy: userId,
+          },
+          $inc: { version: 1 }, // Increment version on each update
+        },
+        { new: true, runValidators: true }
+      );
+    } else {
+      // Create new content with version 1
+      siteContent = await SiteContent.create({
+        key,
         content,
-        updatedBy: (session.user as any).id,
-      },
-      { new: true, runValidators: true }
-    );
+        updatedBy: userId,
+        version: 1,
+      });
+    }
 
     if (!siteContent) {
       return NextResponse.json(
-        { error: "Content not found" },
-        { status: 404 }
+        { error: "Failed to save content" },
+        { status: 500 }
       );
     }
 

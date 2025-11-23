@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { AnimatedCard } from "@/components/ui/AnimatedCard";
 import { ResumeDownload } from "@/components/resume/ResumeDownload";
 import { defaultResumeData } from "@/lib/resume";
+import { LiveEditableField } from "@/components/ui/LiveEditableField";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 
@@ -117,22 +118,23 @@ export default function AboutPage() {
           transition={{ duration: 0.8 }}
         >
           <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-            {summary.title}
+            <LiveEditableField
+              contentKey="about_summary"
+              field="title"
+              defaultValue={summary.title}
+              as="span"
+              onUpdate={(value) => setSummary((prev) => ({ ...prev, title: value }))}
+            />
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400">
-            {summary.subtitle}
+            <LiveEditableField
+              contentKey="about_summary"
+              field="subtitle"
+              defaultValue={summary.subtitle}
+              as="span"
+              onUpdate={(value) => setSummary((prev) => ({ ...prev, subtitle: value }))}
+            />
           </p>
-          {isAdmin && (
-            <div className="pt-2">
-              <Link
-                href="/MonyAdmin/content/about_summary"
-                className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Edit hero summary
-                <span aria-hidden>↗</span>
-              </Link>
-            </div>
-          )}
         </motion.section>
 
         {/* Story Section */}
@@ -147,23 +149,24 @@ export default function AboutPage() {
           </h2>
           <div className="prose prose-lg dark:prose-invert max-w-none">
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg">
-              {story.paragraph1}
+              <LiveEditableField
+                contentKey="about_story"
+                field="paragraph1"
+                defaultValue={story.paragraph1}
+                as="span"
+                onUpdate={(value) => setStory((prev) => ({ ...prev, paragraph1: value }))}
+              />
             </p>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg">
-              {story.paragraph2}
+              <LiveEditableField
+                contentKey="about_story"
+                field="paragraph2"
+                defaultValue={story.paragraph2}
+                as="span"
+                onUpdate={(value) => setStory((prev) => ({ ...prev, paragraph2: value }))}
+              />
             </p>
           </div>
-          {isAdmin && (
-            <div className="pt-2">
-              <Link
-                href="/MonyAdmin/content/about_story"
-                className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Edit story section
-                <span aria-hidden>↗</span>
-              </Link>
-            </div>
-          )}
         </motion.section>
 
         {/* Skills Section */}
@@ -248,24 +251,25 @@ export default function AboutPage() {
           transition={{ duration: 0.8, delay: 0.8 }}
         >
           <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            {architecture.title}
+            <LiveEditableField
+              contentKey="about_architecture"
+              field="title"
+              defaultValue={architecture.title}
+              as="span"
+              onUpdate={(value) => setArchitecture((prev) => ({ ...prev, title: value }))}
+            />
           </h2>
           <div className="prose prose-lg dark:prose-invert max-w-none">
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg">
-              {architecture.description}
+              <LiveEditableField
+                contentKey="about_architecture"
+                field="description"
+                defaultValue={architecture.description}
+                as="span"
+                onUpdate={(value) => setArchitecture((prev) => ({ ...prev, description: value }))}
+              />
             </p>
           </div>
-          {isAdmin && (
-            <div className="pt-2">
-              <Link
-                href="/MonyAdmin/content/about_architecture"
-                className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Edit architecture section
-                <span aria-hidden>↗</span>
-              </Link>
-            </div>
-          )}
         </motion.section>
       </div>
     </div>

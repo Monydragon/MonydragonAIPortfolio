@@ -3,20 +3,30 @@ import { auth } from "@/auth";
 import connectDB from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import VerificationToken from "@/lib/models/VerificationToken";
+import Subscription from "@/lib/models/Subscription";
+import permissionService from "@/lib/services/permission-service";
 
 // GET /api/admin/users - list users with optional filters
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user || (session.user as any).role !== "admin") {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await connectDB();
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const canView = await permissionService.hasPermission(user._id, 'users.view');
+    if (!canView) {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+    }
 
     const { searchParams } = request.nextUrl;
     const search = searchParams.get("search")?.trim();
-    const role = searchParams.get("role");
     const verified = searchParams.get("verified");
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "25", 10);
@@ -34,10 +44,6 @@ export async function GET(request: NextRequest) {
         { location: regex },
         { phone: regex },
       ];
-    }
-
-    if (role && ["admin", "user", "guest"].includes(role)) {
-      filter.role = role;
     }
 
     if (verified === "true") {
@@ -58,8 +64,31 @@ export async function GET(request: NextRequest) {
       User.countDocuments(filter),
     ]);
 
+    // Get subscriptions for users
+    const userIds = users.map((u: any) => u._id);
+    const subscriptions = await Subscription.find({
+      userId: { $in: userIds },
+      status: 'active',
+    }).lean();
+
+    const subscriptionMap = new Map(
+      subscriptions.map((sub: any) => [sub.userId.toString(), sub])
+    );
+
+    // Add subscription info to users
+    const usersWithSubs = users.map((user: any) => ({
+      ...user,
+      subscription: subscriptionMap.get(user._id.toString())
+        ? {
+            tier: subscriptionMap.get(user._id.toString())?.tier,
+            status: subscriptionMap.get(user._id.toString())?.status,
+            creditsPerMonth: subscriptionMap.get(user._id.toString())?.creditsPerMonth,
+          }
+        : null,
+    }));
+
     return NextResponse.json({
-      users,
+      users: usersWithSubs,
       total,
       page,
       limit,
@@ -77,11 +106,20 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user || (session.user as any).role !== "admin") {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await connectDB();
+    const requestingUser = await User.findOne({ email: session.user.email });
+    if (!requestingUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const canEdit = await permissionService.hasPermission(requestingUser._id, 'users.edit');
+    if (!canEdit) {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+    }
 
     const body = await request.json();
     const {
@@ -94,7 +132,6 @@ export async function PUT(request: NextRequest) {
       phone,
       location,
       demographics,
-      role,
       forceVerify,
     } = body;
 
@@ -113,10 +150,6 @@ export async function PUT(request: NextRequest) {
     if (phone !== undefined) user.phone = phone || undefined;
     if (location !== undefined) user.location = location || undefined;
     if (demographics !== undefined) user.demographics = demographics || undefined;
-
-    if (role && ["admin", "user", "guest"].includes(role)) {
-      user.role = role;
-    }
 
     if (typeof forceVerify === "boolean" && forceVerify) {
       user.emailVerified = new Date();
@@ -172,11 +205,20 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user || (session.user as any).role !== "admin") {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await connectDB();
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const canDelete = await permissionService.hasPermission(user._id, 'users.delete');
+    if (!canDelete) {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+    }
 
     const { searchParams } = request.nextUrl;
     const id = searchParams.get("id");
