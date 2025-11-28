@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import connectDB from "@/lib/mongodb";
 import LLMConfig from "@/lib/models/LLMConfig";
 import User from "@/lib/models/User";
+import permissionService from "@/lib/services/permission-service";
 import mongoose from "mongoose";
 
 // GET /api/llm/config - Get LLM configuration
@@ -50,11 +51,22 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
 
-    if (!session?.user || (session.user as any).role !== "admin") {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await connectDB();
+
+    // Check if user has admin.settings permission
+    const user = await User.findById((session.user as any).id);
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const hasPermission = await permissionService.hasPermission(user._id, 'admin.settings');
+    if (!hasPermission) {
+      return NextResponse.json({ error: "Insufficient permissions. Admin access required." }, { status: 403 });
+    }
 
     const body = await request.json();
     const {
@@ -73,12 +85,6 @@ export async function POST(request: NextRequest) {
       defaultTemperature,
       customPrompts,
     } = body;
-
-    // Get admin user
-    const adminUser = await User.findById((session.user as any).id);
-    if (!adminUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
 
     // Find existing config or create new
     let config = await LLMConfig.findOne();
@@ -99,7 +105,7 @@ export async function POST(request: NextRequest) {
       if (defaultMaxTokens !== undefined) config.defaultMaxTokens = defaultMaxTokens;
       if (defaultTemperature !== undefined) config.defaultTemperature = defaultTemperature;
       if (customPrompts !== undefined) config.customPrompts = customPrompts;
-      config.updatedBy = adminUser._id as mongoose.Types.ObjectId;
+      config.updatedBy = user._id as mongoose.Types.ObjectId;
 
       await config.save();
     } else {
@@ -119,7 +125,7 @@ export async function POST(request: NextRequest) {
         defaultMaxTokens: defaultMaxTokens || 2000,
         defaultTemperature: defaultTemperature ?? 0.7,
         customPrompts: customPrompts || {},
-        updatedBy: adminUser._id as mongoose.Types.ObjectId,
+        updatedBy: user._id as mongoose.Types.ObjectId,
       });
     }
 

@@ -88,6 +88,8 @@ export default function UnifiedUserManagementPage() {
   const [saving, setSaving] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
   const [activeTab, setActiveTab] = useState<"users" | "roles">("users");
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [roleForm, setRoleForm] = useState({
     name: "",
@@ -258,6 +260,8 @@ export default function UnifiedUserManagementPage() {
           throw new Error(data.error || "Failed to update user");
         }
         setEditingUser(null);
+        setShowPasswordReset(false);
+        setNewPassword("");
         await fetchUsers();
       }
     } catch (err: any) {
@@ -907,24 +911,42 @@ export default function UnifiedUserManagementPage() {
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     required
-                    disabled={!creatingUser}
-                    className="w-full px-3 py-2 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm disabled:opacity-50"
+                    className="w-full px-3 py-2 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm"
                   />
+                  {!creatingUser && (
+                    <p className="text-xs text-gray-500 mt-1">Email can be changed. User will need to verify new email.</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold mb-1">
-                    Password {creatingUser && <span className="text-red-500">*</span>}
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold">
+                      Password {creatingUser && <span className="text-red-500">*</span>}
+                    </label>
+                    {!creatingUser && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowPasswordReset(true);
+                          setNewPassword("");
+                        }}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                      >
+                        Reset Password
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="password"
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     required={creatingUser}
-                    placeholder={creatingUser ? "Minimum 6 characters" : "Leave blank to keep current"}
+                    placeholder={creatingUser ? "Minimum 6 characters" : "Enter new password or leave blank to keep current"}
                     className="w-full px-3 py-2 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm"
                   />
                   {!creatingUser && (
-                    <p className="text-xs text-gray-500 mt-1">Leave blank to keep current password</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {form.password ? "New password will be set" : "Leave blank to keep current password"}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -1053,6 +1075,8 @@ export default function UnifiedUserManagementPage() {
                   onClick={() => {
                     setEditingUser(null);
                     setCreatingUser(false);
+                    setShowPasswordReset(false);
+                    setNewPassword("");
                   }}
                   disabled={saving}
                 >
@@ -1080,6 +1104,70 @@ export default function UnifiedUserManagementPage() {
                 </AnimatedButton>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Password Reset Modal */}
+        {showPasswordReset && editingUser && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <AnimatedCard className="max-w-md w-full mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">Reset Password for {editingUser.email}</h2>
+                <button
+                  onClick={() => {
+                    setShowPasswordReset(false);
+                    setNewPassword("");
+                  }}
+                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold mb-1">
+                    New Password <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Minimum 6 characters"
+                    className="w-full px-3 py-2 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm"
+                    autoFocus
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    User will need to use this password on next login
+                  </p>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <AnimatedButton
+                    variant="secondary"
+                    onClick={() => {
+                      setShowPasswordReset(false);
+                      setNewPassword("");
+                    }}
+                  >
+                    Cancel
+                  </AnimatedButton>
+                  <AnimatedButton
+                    variant="primary"
+                    onClick={() => {
+                      if (!newPassword || newPassword.length < 6) {
+                        alert("Password must be at least 6 characters");
+                        return;
+                      }
+                      setForm({ ...form, password: newPassword });
+                      setShowPasswordReset(false);
+                      setNewPassword("");
+                    }}
+                    disabled={!newPassword || newPassword.length < 6}
+                  >
+                    Set Password
+                  </AnimatedButton>
+                </div>
+              </div>
+            </AnimatedCard>
           </div>
         )}
 

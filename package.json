@@ -23,7 +23,17 @@
     "docker:logs": "docker-compose logs -f mongodb",
     "docker:clean": "docker-compose down -v",
     "docker:restart": "docker-compose restart mongodb",
-    "docker:status": "docker-compose ps"
+    "docker:status": "docker-compose ps",
+    "docker:poste:up": "docker-compose -f docker-compose.smtp.yml up -d",
+    "docker:poste:down": "docker-compose -f docker-compose.smtp.yml down",
+    "docker:poste:logs": "docker-compose -f docker-compose.smtp.yml logs -f poste",
+    "docker:ollama:up": "docker-compose -f docker-compose.ollama.yml up -d",
+    "docker:ollama:down": "docker-compose -f docker-compose.ollama.yml down",
+    "docker:ollama:logs": "docker-compose -f docker-compose.ollama.yml logs -f ollama",
+    "docker:ollama:pull": "tsx scripts/pull-ollama-model.ts",
+    "docker:ollama:list": "docker exec -it ollama ollama list",
+    "docker:full:up": "docker-compose -f docker-compose.full.yml up -d",
+    "docker:full:down": "docker-compose -f docker-compose.full.yml down"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

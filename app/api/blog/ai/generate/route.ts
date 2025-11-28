@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import connectDB from "@/lib/mongodb";
 import LLMConfig from "@/lib/models/LLMConfig";
+import User from "@/lib/models/User";
+import permissionService from "@/lib/services/permission-service";
 import { llmProviderService } from "@/lib/ai/llm-providers";
 
 // POST /api/blog/ai/generate - Generate blog content using AI (admin only)
@@ -9,7 +11,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -17,6 +19,20 @@ export async function POST(request: NextRequest) {
     }
 
     await connectDB();
+
+    // Check if user has blog.create permission (for AI generation)
+    const user = await User.findById((session.user as any).id);
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const hasPermission = await permissionService.hasPermission(user._id, 'blog.create');
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions. Blog creation access required.' },
+        { status: 403 }
+      );
+    }
     const config = await LLMConfig.findOne().lean();
 
     if (!config || !config.enabled || config.provider === 'none') {
@@ -513,7 +529,8 @@ export async function GET() {
       });
     }
 
-    const isAvailable = await llmProviderService.checkAvailability(config as any);
+    const availabilityResult = await llmProviderService.checkAvailability(config as any);
+    const isAvailable = availabilityResult.available;
 
     return NextResponse.json({
       available: isAvailable,

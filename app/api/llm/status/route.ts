@@ -18,15 +18,32 @@ export async function GET() {
       });
     }
 
-    const isAvailable = await llmProviderService.checkAvailability(config as any);
+    const statusResult = await llmProviderService.checkAvailability(config as any);
+
+    // Determine status level: success, warning, or failed
+    let statusLevel: 'success' | 'warning' | 'failed' = 'failed';
+    if (statusResult.available) {
+      // Check if configured model is available (for Ollama)
+      if (config.provider === 'ollama' && statusResult.details) {
+        if (statusResult.details.modelAvailable === false) {
+          statusLevel = 'warning';
+        } else {
+          statusLevel = 'success';
+        }
+      } else {
+        statusLevel = 'success';
+      }
+    }
 
     return NextResponse.json({
-      available: isAvailable,
+      available: statusResult.available,
+      status: statusLevel,
       provider: config.provider,
       model: config.ollamaModel || config.openaiModel || config.anthropicModel || config.googleModel,
-      message: isAvailable
+      message: statusResult.message || (statusResult.available
         ? `${config.provider} is available`
-        : `${config.provider} is not available. Please check your configuration.`,
+        : `${config.provider} is not available. Please check your configuration.`),
+      details: statusResult.details,
     });
   } catch (error: any) {
     return NextResponse.json(

@@ -25,13 +25,48 @@ A modern, responsive portfolio website showcasing AI-first development workflows
 
 ## Getting Started
 
+### Quick Start
+
+For a quick setup, see [QUICK_START_GUIDE.md](./QUICK_START_GUIDE.md)
+
+### Complete Setup
+
+For comprehensive installation instructions covering:
+- Fresh server installation
+- Existing server updates
+- All Docker containers (MongoDB, Poste.io, Ollama)
+- Complete environment configuration
+- Database setup and migrations
+- Admin user management
+- Production deployment
+
+See [COMPLETE_SERVER_SETUP_GUIDE.md](./COMPLETE_SERVER_SETUP_GUIDE.md) for full details.
+
+## Ollama Model Setup
+
+To add models to the Ollama Docker container:
+
+```bash
+# Start Ollama container
+npm run docker:ollama:up
+
+# Pull a model (e.g., llama3.2)
+npm run docker:ollama:pull llama3.2
+
+# List available models
+npm run docker:ollama:list
+```
+
+See [OLLAMA_MODEL_SETUP.md](./OLLAMA_MODEL_SETUP.md) for detailed instructions.
+
 ### Prerequisites
 
-- Node.js 18+ (20.9.0+ recommended)
-- Docker Desktop (recommended for MongoDB) OR MongoDB installed locally
-- Ollama (optional, for AI features)
+- Node.js 20.9.0+ (LTS recommended)
+- Docker 24.0+ and Docker Compose 2.20+
+- Git
+- PM2 (for production)
 
-### Installation
+### Quick Installation
 
 1. Clone the repository:
 ```bash
@@ -44,25 +79,23 @@ cd MonydragonAIPortfolio
 npm install
 ```
 
-3. Set up MongoDB with Docker (recommended):
+3. Set up environment variables:
+```bash
+cp env.example .env.local
+# Edit .env.local with your configuration
+```
+
+4. Start MongoDB:
 ```bash
 npm run docker:up
 ```
 
-4. Set up environment variables:
+5. Initialize database:
 ```bash
-# Create .env.local file with:
-MONGODB_URI=mongodb://localhost:27017/monydragon_portfolio
-NEXTAUTH_SECRET=your-secret-key-here
-NEXTAUTH_URL=http://localhost:3000
+npm run seed-roles
+npm run seed-services
+npm run create-admin-custom
 ```
-
-5. Create admin user:
-```bash
-npm run create-admin
-```
-
-See [DOCKER_SETUP.md](./DOCKER_SETUP.md) for detailed setup instructions.
 
 6. Run the development server:
 ```bash

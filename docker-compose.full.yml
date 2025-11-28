@@ -1,0 +1,102 @@
+# Complete Docker Compose configuration for all services
+# Usage: docker-compose -f docker-compose.full.yml up -d
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: unless-stopped
+    ports:
+      - "${MONGODB_PORT:-27017}:27017"
+    environment:
+      MONGO_INITDB_DATABASE: monydragon_portfolio
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-}
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - monydragon-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Production: Uncomment to enable authentication
+    # command: ["--auth"]
+
+  # Poste.io Email Server (Optional)
+  poste:
+    image: analogic/poste.io:latest
+    container_name: poste-smtp
+    restart: unless-stopped
+    hostname: ${POSTE_HOSTNAME:-mail.monydragon.com}
+    ports:
+      - "25:25"      # SMTP
+      - "80:80"      # HTTP (for Let's Encrypt)
+      - "110:110"    # POP3
+      - "143:143"    # IMAP
+      - "443:443"    # HTTPS
+      - "465:465"    # SMTPS
+      - "587:587"    # Submission (SMTP with STARTTLS)
+      - "993:993"    # IMAPS
+      - "995:995"    # POP3S
+    environment:
+      TZ: ${TZ:-America/Oklahoma_City}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-admin@monydragon.com}
+    volumes:
+      - poste_data:/data
+    networks:
+      - monydragon-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # Uncomment to enable Poste.io
+    # profiles:
+    #   - email
+
+  # Ollama LLM Server (Optional)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - monydragon-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # Uncomment to enable Ollama
+    # profiles:
+    #   - ai
+    # For GPU support (NVIDIA), uncomment:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+  poste_data:
+    driver: local
+  ollama_data:
+    driver: local
+
+networks:
+  monydragon-network:
+    driver: bridge
+

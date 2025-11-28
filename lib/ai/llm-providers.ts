@@ -457,20 +457,79 @@ class LLMProviderService {
     }
   }
 
-  async checkAvailability(config: LLMConfig): Promise<boolean> {
+  async checkAvailability(config: LLMConfig): Promise<{ available: boolean; message?: string; details?: any }> {
     if (!config.enabled || config.provider === 'none') {
-      return false;
+      return { available: false, message: 'LLM is not enabled or configured' };
     }
 
     try {
       switch (config.provider) {
         case 'ollama':
           const baseUrl = config.ollamaBaseUrl || 'http://localhost:11434';
-          const response = await fetch(`${baseUrl}/api/tags`, { method: 'GET' });
-          return response.ok;
+          try {
+            // Add timeout to prevent hanging
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+            
+            const response = await fetch(`${baseUrl}/api/tags`, { 
+              method: 'GET',
+              signal: controller.signal,
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+              const data = await response.json();
+              const models = data.models || [];
+              const modelName = config.ollamaModel || 'llama3.2';
+              const hasModel = models.some((m: any) => m.name === modelName || m.name.startsWith(modelName));
+              
+              return {
+                available: true,
+                message: `Ollama is connected. ${models.length} model(s) available.`,
+                details: {
+                  baseUrl,
+                  modelCount: models.length,
+                  configuredModel: modelName,
+                  modelAvailable: hasModel,
+                  models: models.map((m: any) => m.name),
+                },
+              };
+            } else {
+              return {
+                available: false,
+                message: `Ollama server responded with error: ${response.status} ${response.statusText}`,
+                details: { baseUrl, status: response.status },
+              };
+            }
+          } catch (error: any) {
+            if (error.name === 'AbortError') {
+              return {
+                available: false,
+                message: `Connection timeout. Ollama at ${baseUrl} is not responding.`,
+                details: { baseUrl, error: 'timeout' },
+              };
+            }
+            if (error.message?.includes('ECONNREFUSED') || error.message?.includes('fetch failed')) {
+              return {
+                available: false,
+                message: `Cannot connect to Ollama at ${baseUrl}. Make sure Ollama is running (docker-compose up -d ollama).`,
+                details: { baseUrl, error: 'connection_refused' },
+              };
+            }
+            return {
+              available: false,
+              message: `Ollama connection error: ${error.message || 'Unknown error'}`,
+              details: { baseUrl, error: error.message },
+            };
+          }
         case 'openai':
-          if (!config.openaiApiKey) return false;
-          // Test with a simple API call
+          if (!config.openaiApiKey) {
+            return { available: false, message: 'OpenAI API key is not configured' };
+          }
           try {
             const baseUrl = config.openaiBaseUrl || 'https://api.openai.com/v1';
             const testResponse = await fetch(`${baseUrl}/models`, {
@@ -480,13 +539,18 @@ class LLMProviderService {
                 'Content-Type': 'application/json',
               },
             });
-            return testResponse.ok;
-          } catch {
-            return false;
+            if (testResponse.ok) {
+              return { available: true, message: 'OpenAI API is connected' };
+            } else {
+              return { available: false, message: `OpenAI API error: ${testResponse.status} ${testResponse.statusText}` };
+            }
+          } catch (error: any) {
+            return { available: false, message: `OpenAI connection error: ${error.message || 'Unknown error'}` };
           }
         case 'anthropic':
-          if (!config.anthropicApiKey) return false;
-          // Test with a simple API call
+          if (!config.anthropicApiKey) {
+            return { available: false, message: 'Anthropic API key is not configured' };
+          }
           try {
             const testResponse = await fetch('https://api.anthropic.com/v1/messages', {
               method: 'POST',
@@ -502,13 +566,18 @@ class LLMProviderService {
               }),
             });
             // 400 is OK (it means auth worked, just bad request), 401/403 means auth failed
-            return testResponse.status !== 401 && testResponse.status !== 403;
-          } catch {
-            return false;
+            if (testResponse.status !== 401 && testResponse.status !== 403) {
+              return { available: true, message: 'Anthropic API is connected' };
+            } else {
+              return { available: false, message: 'Anthropic API authentication failed' };
+            }
+          } catch (error: any) {
+            return { available: false, message: `Anthropic connection error: ${error.message || 'Unknown error'}` };
           }
         case 'google':
-          if (!config.googleApiKey) return false;
-          // Test with a simple API call - try to list models
+          if (!config.googleApiKey) {
+            return { available: false, message: 'Google API key is not configured' };
+          }
           try {
             const testResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${config.googleApiKey}`, {
               method: 'GET',
@@ -516,15 +585,19 @@ class LLMProviderService {
                 'Content-Type': 'application/json',
               },
             });
-            return testResponse.ok;
-          } catch {
-            return false;
+            if (testResponse.ok) {
+              return { available: true, message: 'Google API is connected' };
+            } else {
+              return { available: false, message: `Google API error: ${testResponse.status} ${testResponse.statusText}` };
+            }
+          } catch (error: any) {
+            return { available: false, message: `Google connection error: ${error.message || 'Unknown error'}` };
           }
         default:
-          return false;
+          return { available: false, message: `Unsupported provider: ${config.provider}` };
       }
-    } catch {
-      return false;
+    } catch (error: any) {
+      return { available: false, message: `Connection check failed: ${error.message || 'Unknown error'}` };
     }
   }
 }

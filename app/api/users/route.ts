@@ -336,6 +336,40 @@ export async function PUT(request: NextRequest) {
             }
             targetUser.password = updateData.password;
           }
+        } else if (field === 'email') {
+          // Validate email uniqueness when changing
+          const newEmail = updateData[field]?.toLowerCase();
+          if (newEmail && newEmail !== targetUser.email.toLowerCase()) {
+            const existingUser = await User.findOne({ 
+              email: newEmail,
+              _id: { $ne: targetUser._id }
+            });
+            if (existingUser) {
+              return NextResponse.json(
+                { error: 'Email already in use by another user' },
+                { status: 400 }
+              );
+            }
+            targetUser.email = newEmail;
+            // Unverify email when it's changed
+            targetUser.emailVerified = null;
+          }
+        } else if (field === 'username') {
+          // Validate username uniqueness when changing
+          const newUsername = updateData[field]?.toLowerCase();
+          if (newUsername && newUsername !== (targetUser.username || '').toLowerCase()) {
+            const existingUser = await User.findOne({ 
+              username: newUsername,
+              _id: { $ne: targetUser._id }
+            });
+            if (existingUser) {
+              return NextResponse.json(
+                { error: 'Username already taken by another user' },
+                { status: 400 }
+              );
+            }
+            targetUser.username = newUsername;
+          }
         } else if (field !== 'forceVerify') {
           (targetUser as any)[field] = updateData[field] || undefined;
         }
